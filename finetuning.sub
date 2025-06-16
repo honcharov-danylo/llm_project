@@ -1,6 +1,6 @@
-executable = /home/dhonchar/llm_project/conda_wrapper_fine.sh
+executable = /home/dhonchar/llm_project/finetuning_scripts/conda_wrapper_fine.sh
 
-arguments  = python /home/dhonchar/llm_project/finetuning.py
+arguments  = python /home/dhonchar/llm_project/finetuning_scripts/finetuning.py
 
 output     = logs_finetuning/ft.out
 error      = logs_finetuning/ft.err
