@@ -20,7 +20,7 @@ import os, tempfile, wandb, json
 
 from lighteval.logging.evaluation_tracker import EvaluationTracker
 from lighteval.pipeline import Pipeline, PipelineParameters, ParallelismManager
-from lighteval.models.transformers import TransformersModelConfig  # backend = Accelerate
+from lighteval.models.transformers.transformers_model import TransformersModelConfig
 
 def run_lighteval(checkpoint_path, tasks):
     tracker = EvaluationTracker(output_dir="./le_results", save_details=False)
