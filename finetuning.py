@@ -18,46 +18,61 @@ from transformers import TrainingArguments, TrainerCallback
 import gc, torch
 import os, tempfile, wandb, json
 
-from lighteval import evaluator
+from lighteval.logging.evaluation_tracker import EvaluationTracker
+from lighteval.pipeline import Pipeline, PipelineParameters, ParallelismManager
+from lighteval.models.transformers import TransformersModelConfig  # backend = Accelerate
+
+def run_lighteval(checkpoint_path, tasks):
+    tracker = EvaluationTracker(output_dir="./le_results", save_details=False)
+
+    pipe_params = PipelineParameters(
+        launcher_type=ParallelismManager.ACCELERATE,
+        env_config=None,                 # uses HF_CACHE by default
+    )
+
+    model_cfg = TransformersModelConfig(
+        model_name=checkpoint_path,      # local dir with snapshot from your callback
+        dtype="float16",
+        use_chat_template=True,
+    )
+
+    pipeline = Pipeline(
+        tasks=",".join(tasks),           # e.g. "leaderboard|gsm8k|0|true"
+        pipeline_parameters=pipe_params,
+        evaluation_tracker=tracker,
+        model_config=model_cfg,
+    )
+
+    # returns a nested dict with all scores
+    return pipeline.evaluate()
+
+
 
 class LightEvalCallback(TrainerCallback):
-    """
-    Run LightEval every `freq` evaluation events (those happen every
-    `eval_steps`) and push the benchmark scores to wandb.
-    """
-    def __init__(self, tasks, freq=2, threads=8, batch_size=4):
-        self.tasks     = tasks
-        self.freq_eval = freq
-        self.kwargs    = dict(num_threads=threads, batch_size=batch_size)
-        self.counter   = 0
+    def __init__(self, tasks, every_n_evals=2):
+        self.tasks, self.freq = tasks, every_n_evals
+        self.count = 0
 
-    # called right after the normal HF evaluation loop
-    def on_evaluate(self, args, state, control, **kwargs):
-        self.counter += 1
-        if self.counter % self.freq_eval:          # skip until it’s time
-            return
+    def on_evaluate(self, args, state, control, **kw):
+        self.count += 1
+        if self.count % self.freq:
+            return                      # only every Nth HF eval
 
-        model, tokenizer = kwargs["model"], kwargs["tokenizer"]
+        model, tok = kw["model"], kw["tokenizer"]
 
-        # —— 1. snapshot current weights to a temp dir ——
         with tempfile.TemporaryDirectory() as tmp:
             model.save_pretrained(tmp)
-            tokenizer.save_pretrained(tmp)
+            tok.save_pretrained(tmp)
 
-            # —— 2. run LightEval on that checkpoint ——
-            res = evaluator.evaluate(
-                model_id   = tmp,          # any transformers checkpoint path works
-                tasks      = self.tasks,   # e.g. ["leaderboard|mmlu|0|true", ...]
-                **self.kwargs
-            )
+            res = run_lighteval(tmp, self.tasks)
 
-        # —— 3. flatten & stream to W&B ——
-        flat = {}
-        for task, metric_dict in res["results"].items():   # 'results' key in Lighteval ≥0.9
-            for k, v in metric_dict.items():
-                flat[f"lighteval/{task}/{k}"] = v
-
+        flat = {
+            f"lighteval/{t}/{m}": v
+            for t, metrics in res["results"].items()
+            for m, v in metrics.items()
+        }
         wandb.log(flat, step=state.global_step)
+
 
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
