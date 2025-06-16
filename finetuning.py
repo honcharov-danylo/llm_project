@@ -1,3 +1,6 @@
+import os
+os.environ["WANDB_PROJECT"] = "llm-finetuning-long"   # must come before Trainer is built
+
 #import subprocess
 #subprocess.run("yes | pip install bitsandbytes")
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
@@ -11,8 +14,50 @@ import datasets
 from transformers import DataCollatorForLanguageModeling
 from peft import LoraConfig, get_peft_model
 from trl import SFTTrainer
-from transformers import TrainingArguments
+from transformers import TrainingArguments, TrainerCallback
 import gc, torch
+import os, tempfile, wandb, json
+
+from lighteval import evaluator
+
+class LightEvalCallback(TrainerCallback):
+    """
+    Run LightEval every `freq` evaluation events (those happen every
+    `eval_steps`) and push the benchmark scores to wandb.
+    """
+    def __init__(self, tasks, freq=2, threads=8, batch_size=4):
+        self.tasks     = tasks
+        self.freq_eval = freq
+        self.kwargs    = dict(num_threads=threads, batch_size=batch_size)
+        self.counter   = 0
+
+    # called right after the normal HF evaluation loop
+    def on_evaluate(self, args, state, control, **kwargs):
+        self.counter += 1
+        if self.counter % self.freq_eval:          # skip until it’s time
+            return
+
+        model, tokenizer = kwargs["model"], kwargs["tokenizer"]
+
+        # —— 1. snapshot current weights to a temp dir ——
+        with tempfile.TemporaryDirectory() as tmp:
+            model.save_pretrained(tmp)
+            tokenizer.save_pretrained(tmp)
+
+            # —— 2. run LightEval on that checkpoint ——
+            res = evaluator.evaluate(
+                model_id   = tmp,          # any transformers checkpoint path works
+                tasks      = self.tasks,   # e.g. ["leaderboard|mmlu|0|true", ...]
+                **self.kwargs
+            )
+
+        # —— 3. flatten & stream to W&B ——
+        flat = {}
+        for task, metric_dict in res["results"].items():   # 'results' key in Lighteval ≥0.9
+            for k, v in metric_dict.items():
+                flat[f"lighteval/{task}/{k}"] = v
+
+        wandb.log(flat, step=state.global_step)
 
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
@@ -20,6 +65,14 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16,
 )
+
+light_tasks = [
+    "leaderboard|truthfulqa:mc|0|0",
+    "leaderboard|gsm8k|0|true",
+]
+callbacks = [LightEvalCallback(light_tasks, freq=500)]  # every 3rd eval ⇒ every 1500 steps
+
+
 
 model_dir = "Qwen/Qwen2.5-3B-Instruct"
 tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True, max_length = 50000)
@@ -144,14 +197,17 @@ training_arguments = TrainingArguments(
     gradient_accumulation_steps=2,
     optim="paged_adamw_32bit",
     num_train_epochs=1,
-    logging_steps=0.2,
+    logging_steps=0.01,
     warmup_steps=10,
     max_steps = steps,
     logging_strategy="steps",
     learning_rate=2e-4,
     fp16=False,
     bf16=False,
-    report_to="none"
+    report_to=["wandb"],
+    evaluation_strategy="steps",
+    eval_steps=0.01,
+    save_steps=0.01
 )
 
 # Initialize the Trainer
@@ -161,6 +217,7 @@ trainer = SFTTrainer(
     train_dataset=dataset,
     peft_config=peft_config,
     data_collator=data_collator,
+    callbacks = callbacks
 )
 
 gc.collect()
