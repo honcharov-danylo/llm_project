@@ -224,7 +224,6 @@ training_arguments = TrainingArguments(
     bf16=False,
     report_to=["wandb"],
     eval_strategy="steps",
-    eval_dataset = eval_dataset,
     eval_steps=0.01,
     save_steps=0.01
 )
@@ -236,7 +235,8 @@ trainer = SFTTrainer(
     train_dataset=dataset,
     peft_config=peft_config,
     data_collator=data_collator,
-    callbacks = callbacks
+    callbacks = callbacks,
+    eval_dataset=eval_dataset,
 )
 
 gc.collect()
