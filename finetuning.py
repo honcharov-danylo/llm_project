@@ -220,7 +220,7 @@ training_arguments = TrainingArguments(
     fp16=False,
     bf16=False,
     report_to=["wandb"],
-    evaluation_strategy="steps",
+    eval_strategy="steps",
     eval_steps=0.01,
     save_steps=0.01
 )
