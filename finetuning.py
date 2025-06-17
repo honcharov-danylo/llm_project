@@ -49,8 +49,8 @@ def run_lighteval(checkpoint_path, tasks):
 
 
 class LightEvalCallback(TrainerCallback):
-    def __init__(self, tasks, every_n_evals=2):
-        self.tasks, self.freq = tasks, every_n_evals
+    def __init__(self, tasks, freq=2):
+        self.tasks, self.freq = tasks, freq
         self.count = 0
 
     def on_evaluate(self, args, state, control, **kw):
