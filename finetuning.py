@@ -202,7 +202,7 @@ peft_config = LoraConfig(
 batch_size = 4
 steps = int(1000000/batch_size)
 
-eval_dataset = dataset.take(128)
+eval_dataset = dataset.take(32)
 
 # Training Arguments
 training_arguments = TrainingArguments(
