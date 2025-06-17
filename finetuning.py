@@ -199,10 +199,10 @@ peft_config = LoraConfig(
     ],  # Target modules for LoRA
 )
 
-model = get_peft_model(model, peft_config)
-
 batch_size = 4
 steps = int(1000000/batch_size)
+
+eval_dataset = dataset.take(128)
 
 # Training Arguments
 training_arguments = TrainingArguments(
@@ -221,6 +221,7 @@ training_arguments = TrainingArguments(
     bf16=False,
     report_to=["wandb"],
     eval_strategy="steps",
+    eval_dataset = eval_dataset,
     eval_steps=0.01,
     save_steps=0.01
 )
