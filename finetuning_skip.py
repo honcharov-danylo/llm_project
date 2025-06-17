@@ -1,15 +1,5 @@
 import os
 os.environ["WANDB_PROJECT"] = "llm-finetuning-skip"   # must come before Trainer is built
-
-import inspect, transformers, trl
-from transformers import TrainingArguments as HFTrainingArguments
-print(HFTrainingArguments.__module__)          # should print "transformers.training_args"
-
-# 2️⃣  Confirm the field exists:
-print("evaluation_strategy" in
-      HFTrainingArguments.__dataclass_fields__)  # should print True
-
-
 #import subprocess
 #subprocess.run("yes | pip install bitsandbytes")
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
