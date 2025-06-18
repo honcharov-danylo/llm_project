@@ -1,0 +1,15 @@
+executable = /home/dhonchar/llm_project/conda_wrapper.sh
+
+arguments  = python /home/dhonchar/llm_project/clean.py $(Process) 32
+
+output     = logs/clean_$(Process).out
+error      = logs/clean_$(Process).err
+log        = logs/clean_$(Process).log
+getenv     = True
+
+request_cpus   = 1
+request_memory = 16 GB
+
+queue 31
+Requirements = TARGET.vm_name == "its-u20-nfs-20210413" && regexp("CRUSH", TARGET.name) 
+queue 
