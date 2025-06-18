@@ -2,6 +2,7 @@ import os
 from tqdm import tqdm
 import json
 import gzip
+from langdetect import detect
 
 # import pandas as pd
 
@@ -138,12 +139,29 @@ assert len(sys.argv)==3
 proc_num = int(sys.argv[1])
 total_proc = int(sys.argv[2])
 
+
+
+
+
 inputs = []
-for file in os.listdir("/home/dhonchar/llm_project/data/"):
-    with open("/home/dhonchar/llm_project/data/{}".format(file)) as f:
+for file in os.listdir("data/"):
+    with open("data/{}".format(file)) as f:
         inputs.append(f.read())
-        #print(file)
 del inputs[6326] # broken file
+
+non_eng_docs = []
+non_eng_indices = []
+for i, doc in enumerate(inputs):
+    try:
+        if detect(doc)!='en':
+            non_eng_docs.append(doc)
+            non_eng_indices.append(i)
+    except Exception:
+        non_eng_docs.append(doc)
+        non_eng_indices.append(i)
+
+
+inputs = [doc for i, doc in enumerate(inputs) if i not in set(non_eng_indices)]
 
 step = len(inputs)//total_proc
 print(step)
