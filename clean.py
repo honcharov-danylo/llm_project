@@ -82,7 +82,10 @@ def _clean_piece(piece: str) -> str:
         pass
     if not piece.strip():
         return piece
-    piece = SYM.word_segmentation(piece, ignore_token=IGNORE_RE).corrected_string
+    try:
+        piece = SYM.word_segmentation(piece, ignore_token=IGNORE_RE).corrected_string
+    except:
+        pass
     return piece
 
 
