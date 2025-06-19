@@ -145,7 +145,10 @@ def process_inline_block(inline):
                     # cleaned =  PUNCT_MODEL.restore_punctuation(cleaned)
                     final_parts.append(cleaned)
         joined = " ".join(final_parts)
-        joined = PUNCT_MODEL.restore_punctuation(joined)
+        try:
+            joined = PUNCT_MODEL.restore_punctuation(joined)
+        except:
+            pass
         joined = _sentence_case(joined)
         node.content = joined
 
