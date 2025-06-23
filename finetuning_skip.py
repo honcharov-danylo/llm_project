@@ -1,5 +1,5 @@
 import os
-os.environ["WANDB_PROJECT"] = "llm-finetuning-skip"   # must come before Trainer is built
+os.environ["WANDB_PROJECT"] = "llm-finetuning-skip-stylo"   # must come before Trainer is built
 #import subprocess
 #subprocess.run("yes | pip install bitsandbytes")
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
