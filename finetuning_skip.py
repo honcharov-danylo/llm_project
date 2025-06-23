@@ -14,6 +14,7 @@ from transformers import DataCollatorForLanguageModeling
 from peft import LoraConfig, get_peft_model
 from trl import SFTTrainer
 from transformers import TrainingArguments, TrainerCallback
+from sentence_transformers import SentenceTransformer, util
 
 import gc, torch
 import os, tempfile, wandb, json
@@ -124,29 +125,72 @@ for file in os.listdir("data/"):
         inputs.append(f.read())
 del inputs[6326] # broken file
 
-def _sample_generator(texts: List[str]) -> Iterator[Dict[str, str]]:
+def _sample_generator(texts: List[str], start:int, step:int) -> Iterator[Dict[str, str]]:
     for doc in texts:
         sents = sent_tokenize(doc)
-        for k in range(1, len(sents) + 1, 10):
+        for k in range(start, len(sents) + 1, step):
             yield {
                 "question": " ".join(sents[:k]),
                 "answer":   " ".join(sents[k:]),
             }
 
-def build_prefixqa_dataset(texts: List[str]) -> datasets.IterableDataset:
+def build_prefixqa_dataset(texts: List[str], start:int, step:int) -> datasets.IterableDataset:
     features = datasets.Features({
         "question": datasets.Value("string"),
         "answer":   datasets.Value("string"),
     })
     return datasets.IterableDataset.from_generator(
-        lambda: _sample_generator(texts),  # generator **factory**
+        lambda: _sample_generator(texts, start, step),  # generator **factory**
         features=features,
     )
 
 
-ds = build_prefixqa_dataset(inputs)
+ds = build_prefixqa_dataset(inputs, 1, 10)
+eval_ds = build_prefixqa_dataset(inputs, 5, 20) # create eval in different way with different steps
 
 EOS_TOKEN = tokenizer.eos_token  # Must add EOS_TOKEN
+
+style_encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+sample_train_texts = [ex["answer"]              # or ex["text"] in your format
+                      for ex, _ in zip(eval_ds, range(4096))]   # take first 4 k
+
+style_bank = style_encoder.encode(
+    sample_train_texts,
+    batch_size=128,
+    normalize_embeddings=True,
+    device="cuda" if torch.cuda.is_available() else "cpu",
+)
+
+def compute_metrics(eval_pred):
+    # HF passes (generated_tokens, labels) or (logits, labels)
+    predictions = eval_pred.predictions
+
+    # a) decode
+    gen_texts = tokenizer.batch_decode(predictions,
+                                       skip_special_tokens=True,
+                                       clean_up_tokenization_spaces=True)
+
+    # b) embed
+    gen_emb = style_encoder.encode(
+        gen_texts,
+        batch_size=64,
+        normalize_embeddings=True,
+        device="cuda" if torch.cuda.is_available() else "cpu",
+    )                                            # shape = [len(gen), 384]
+
+    # c) cosine-sim to style bank
+    # util.cos_sim returns [gen, bank]; take max along bank axis
+    sims = util.cos_sim(torch.tensor(gen_emb), torch.tensor(style_bank))
+    max_sims = sims.max(dim=1).values.cpu().numpy()
+
+    return {
+        "style_sim_mean": float(max_sims.mean()),
+        "style_sim_std":  float(max_sims.std()),
+    }
+
+
+
 
 def formatting_prompts_func(examples):
     inputs = examples["question"]
@@ -165,6 +209,10 @@ dataset = ds.map(
     batched=True,
 )
 
+eval_dataset_mapped = eval_ds.map(
+    formatting_prompts_func,
+    batched=True,
+)
 
 
 data_collator = DataCollatorForLanguageModeling(
@@ -197,7 +245,7 @@ model = get_peft_model(model, peft_config)
 batch_size = 4
 steps = int(1000000/batch_size)
 
-eval_dataset = dataset.take(32)
+eval_dataset = eval_dataset_mapped.take(128)
 
 # Training Arguments
 training_arguments = TrainingArguments(
@@ -217,7 +265,9 @@ training_arguments = TrainingArguments(
     report_to=["wandb"],
     eval_strategy="steps",
     eval_steps=0.01,
-    save_steps=0.01
+    save_steps=0.01,
+    predict_with_generate=True,  # ← enables generation
+    generation_max_length=128,  # tweak for your tas
 )
 
 # Initialize the Trainer
@@ -229,6 +279,7 @@ trainer = SFTTrainer(
     data_collator=data_collator,
     callbacks = callbacks,
     eval_dataset=eval_dataset,
+    compute_metrics=compute_metrics  # ← add this line
 )
 
 gc.collect()
