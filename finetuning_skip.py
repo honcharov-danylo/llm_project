@@ -124,18 +124,10 @@ for file in os.listdir("data/"):
         inputs.append(f.read())
 del inputs[6326] # broken file
 
-
-def create_new_samples(text):
-    tokenized_text = nltk.tokenize.sent_tokenize(text, language='english')
-    return [[{"Question":"".join(t[:i]), "Response":"".join(t[:i])} for i in range(0,len(t),10)] for t in tokenized_text]
-
-
-
-
 def _sample_generator(texts: List[str]) -> Iterator[Dict[str, str]]:
     for doc in texts:
         sents = sent_tokenize(doc)
-        for k in range(1, len(sents) + 1):
+        for k in range(1, len(sents) + 1, 10):
             yield {
                 "question": " ".join(sents[:k]),
                 "answer":   " ".join(sents[k:]),
