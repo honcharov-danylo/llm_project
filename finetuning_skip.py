@@ -18,6 +18,7 @@ from transformers import DataCollatorForLanguageModeling
 from peft import LoraConfig, get_peft_model
 from trl import SFTTrainer
 from transformers import TrainingArguments, TrainerCallback
+from transformers import Seq2SeqTrainingArguments
 from sentence_transformers import SentenceTransformer, util
 
 import gc, torch
@@ -252,7 +253,7 @@ steps = int(1000000/batch_size)
 eval_dataset = eval_dataset_mapped.take(128)
 
 # Training Arguments
-training_arguments = TrainingArguments(
+training_arguments = Seq2SeqTrainingArguments(
     output_dir="output_skip",
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=1,
