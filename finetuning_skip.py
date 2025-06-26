@@ -16,7 +16,7 @@ from nltk.tokenize import sent_tokenize
 import datasets
 from transformers import DataCollatorForLanguageModeling
 from peft import LoraConfig, get_peft_model
-from trl import SFTTrainer
+from trl import SFTTrainer, SFTConfig
 from transformers import TrainingArguments, TrainerCallback
 from transformers import Seq2SeqTrainingArguments
 from sentence_transformers import SentenceTransformer, util
@@ -253,7 +253,7 @@ steps = int(1000000/batch_size)
 eval_dataset = eval_dataset_mapped.take(128)
 
 # Training Arguments
-training_arguments = Seq2SeqTrainingArguments(
+seq_args = Seq2SeqTrainingArguments(
     output_dir="output_skip",
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=1,
@@ -272,9 +272,15 @@ training_arguments = Seq2SeqTrainingArguments(
     eval_steps=0.01,
     save_steps=0.01,
     predict_with_generate=True,
-    generation_max_length=128,
-    group_by_length = True
+    generation_max_length=128
 )
+
+
+cfg_dict = seq_args.to_dict()
+cfg_dict.pop("sortish_sampler", None)
+
+training_arguments = SFTConfig(**cfg_dict)
+
 
 # Initialize the Trainer
 trainer = SFTTrainer(
