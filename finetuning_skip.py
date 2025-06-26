@@ -271,8 +271,9 @@ training_arguments = Seq2SeqTrainingArguments(
     eval_strategy="steps",
     eval_steps=0.01,
     save_steps=0.01,
-    predict_with_generate=True,  # ← enables generation
-    generation_max_length=128,  # tweak for your tas
+    predict_with_generate=True,
+    generation_max_length=128,
+    group_by_length = True
 )
 
 # Initialize the Trainer
@@ -284,7 +285,7 @@ trainer = SFTTrainer(
     data_collator=data_collator,
     callbacks = callbacks,
     eval_dataset=eval_dataset,
-    compute_metrics=compute_metrics  # ← add this line
+    compute_metrics=compute_metrics
 )
 
 gc.collect()
