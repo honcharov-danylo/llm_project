@@ -283,7 +283,7 @@ cfg_dict = seq_args.to_dict()
 cfg = {k: v for k, v in seq_args.to_dict().items()
        if k not in {"sortish_sampler", "predict_with_generate",
                     "generation_max_length", "generation_max_new_tokens",
-                    "generation_num_beams"}}
+                    "generation_num_beams", "generation_config"}}
 training_arguments = SFTConfig(**cfg)
 
 
