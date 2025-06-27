@@ -260,38 +260,31 @@ seq_args = Seq2SeqTrainingArguments(
     gradient_accumulation_steps=2,
     optim="paged_adamw_32bit",
     num_train_epochs=1,
-    logging_steps=0.01,
-    warmup_steps=10,
-    max_steps = steps,
+    max_steps=steps,
     logging_strategy="steps",
-    learning_rate=2e-4,
-    fp16=False,
-    bf16=False,
-    report_to=["wandb"],
+    logging_steps=10,          # ← must be int
     eval_strategy="steps",
-    eval_steps=0.01,
-    save_steps=0.01,
+    eval_steps=500,            # ← must be int
+    save_steps=500,
+    warmup_steps=10,
+    learning_rate=2e-4,
+    report_to=["wandb"],
+
+    # generation flags
     predict_with_generate=True,
-    generation_max_length=128
+    generation_max_length=128,
+    group_by_length=True,      # (optional replacement for sortish_sampler)
 )
 
-
-cfg_dict = seq_args.to_dict()
-cfg_dict.pop("sortish_sampler", None)
-
-training_arguments = SFTConfig(**cfg_dict)
-
-
-# Initialize the Trainer
 trainer = SFTTrainer(
     model=model,
-    args=training_arguments,
+    args=seq_args,             # <-- pass the Seq2SeqTrainingArguments object
     train_dataset=dataset,
-    peft_config=peft_config,
-    data_collator=data_collator,
-    callbacks = callbacks,
     eval_dataset=eval_dataset,
-    compute_metrics=compute_metrics
+    data_collator=data_collator,
+    peft_config=peft_config,
+    callbacks=callbacks,
+    compute_metrics=compute_metrics,
 )
 
 gc.collect()
