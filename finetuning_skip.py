@@ -253,7 +253,7 @@ steps = int(1000000/batch_size)
 eval_dataset = eval_dataset_mapped.take(128)
 
 # Training Arguments
-seq_args = Seq2SeqTrainingArguments(
+training_arguments = TrainingArguments(
     output_dir="output_skip",
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=1,
@@ -276,18 +276,6 @@ seq_args = Seq2SeqTrainingArguments(
 )
 
 
-
-
-cfg_dict = seq_args.to_dict()
-
-cfg = {k: v for k, v in seq_args.to_dict().items()
-       if k not in {"sortish_sampler", "predict_with_generate",
-                    "generation_max_length", "generation_max_new_tokens",
-                    "generation_num_beams", "generation_config"}}
-training_arguments = SFTConfig(**cfg)
-
-
-training_arguments = SFTConfig(**cfg_dict)
 
 
 # Initialize the Trainer
