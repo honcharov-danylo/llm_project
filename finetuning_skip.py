@@ -158,7 +158,7 @@ EOS_TOKEN = tokenizer.eos_token  # Must add EOS_TOKEN
 style_encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
 sample_train_texts = [ex["answer"]              # or ex["text"] in your format
-                      for ex, _ in zip(eval_ds, range(4096))]   # take first 4 k
+                      for ex, _ in zip(eval_ds, range(256))]   # take first 4 k
 
 style_bank = style_encoder.encode(
     sample_train_texts,
