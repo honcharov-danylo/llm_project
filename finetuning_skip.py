@@ -130,6 +130,9 @@ for file in os.listdir("data/"):
         inputs.append(f.read())
 del inputs[6326] # broken file
 
+# temporary reduction of dataset size for testing
+inputs = inputs[:100]
+
 def _sample_generator(texts: List[str], start:int, step:int) -> Iterator[Dict[str, str]]:
     for doc in texts:
         sents = sent_tokenize(doc)
