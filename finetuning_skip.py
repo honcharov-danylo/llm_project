@@ -27,7 +27,7 @@ import os, tempfile, wandb, json
 from lighteval.logging.evaluation_tracker import EvaluationTracker
 from lighteval.pipeline import Pipeline, PipelineParameters, ParallelismManager
 from lighteval.models.transformers.transformers_model import TransformersModelConfig
-
+import logging
 
 def run_lighteval(checkpoint_path, tasks):
     tracker = EvaluationTracker(output_dir="./le_results", save_details=False)
@@ -123,7 +123,7 @@ Please, write next paragraph for the following text.
 ### Response:
 {}"""
 
-print("Loading dataset:")
+logging.info("Loading dataset:")
 
 inputs = []
 for file in os.listdir("data/"):
@@ -134,7 +134,7 @@ del inputs[6326] # broken file
 # temporary reduction of dataset size for testing
 inputs = inputs[:100]
 
-print("Data loaded.")
+logging.info("Data loaded.")
 
 def _sample_generator(texts: List[str], start:int, step:int) -> Iterator[Dict[str, str]]:
     for doc in texts:
@@ -156,18 +156,18 @@ def build_prefixqa_dataset(texts: List[str], start:int, step:int) -> datasets.It
     )
 
 
-print("Building datasets:")
+logging.info("Building datasets:")
 
 ds = build_prefixqa_dataset(inputs, 1, 10)
 eval_ds = build_prefixqa_dataset(inputs, 5, 20) # create eval in different way with different steps
 
-print("Datasets are built.")
+logging.info("Datasets are built.")
 
 EOS_TOKEN = tokenizer.eos_token  # Must add EOS_TOKEN
 
 style_encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
-print("Encoding eval dataset:")
+logging.info("Encoding eval dataset:")
 
 sample_train_texts = [ex["answer"]              # or ex["text"] in your format
                       for ex, _ in zip(eval_ds, range(256))]   # take first 4 k
@@ -179,7 +179,7 @@ style_bank = style_encoder.encode(
     device="cuda" if torch.cuda.is_available() else "cpu",
 )
 
-print("Eval dataset is encoded.")
+logging.info("Eval dataset is encoded.")
 
 def compute_metrics(eval_pred):
     # HF passes (generated_tokens, labels) or (logits, labels)
@@ -223,7 +223,7 @@ def formatting_prompts_func(examples):
         texts.append(text)
     return {"text": texts}
 
-print("Formatting datasets:")
+logging.info("Formatting datasets:")
 
 dataset = ds.map(
     formatting_prompts_func,
@@ -236,7 +236,7 @@ eval_dataset_mapped = eval_ds.map(
 )
 
 
-print("Datasets are formatted.")
+logging.info("Datasets are formatted.")
 
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer,
@@ -244,7 +244,7 @@ data_collator = DataCollatorForLanguageModeling(
 )
 
 
-print("Loading model:")
+logging.info("Loading model:")
 # LoRA config
 peft_config = LoraConfig(
     lora_alpha=16,                           # Scaling factor for LoRA
@@ -270,7 +270,7 @@ steps = int(1000000/batch_size)
 
 eval_dataset = eval_dataset_mapped.take(128)
 
-print("Model loaded. Building training arguments.")
+logging.info("Model loaded. Building training arguments.")
 
 # Training Arguments
 training_arguments = TrainingArguments(
@@ -291,12 +291,12 @@ training_arguments = TrainingArguments(
     eval_strategy="steps",
     eval_steps=0.01,
     save_steps=0.01,
-    predict_with_generate=True,
+    # predict_with_generate=True,
     generation_max_length=128
 )
 
 
-print("Building Trainer")
+logging.info("Building Trainer")
 
 # Initialize the Trainer
 trainer = SFTTrainer(
@@ -309,7 +309,7 @@ trainer = SFTTrainer(
     eval_dataset=eval_dataset,
     compute_metrics=compute_metrics
 )
-print("Starting training")
+logging.info("Starting training")
 
 gc.collect()
 torch.cuda.empty_cache()
