@@ -1,5 +1,6 @@
 import os
 os.environ["WANDB_PROJECT"] = "llm-finetuning-skip-stylo"   # must come before Trainer is built
+os.environ["WANDB_LOG_MODEL"] = "checkpoint"
 #import subprocess
 #subprocess.run("yes | pip install bitsandbytes")
 
@@ -188,9 +189,8 @@ logging.info("Eval dataset is encoded.")
 
 class LLMSampleCB(WandbCallback):
     def __init__(self, trainer, test_dataset, num_samples=10, max_new_tokens=256, log_model="checkpoint"):
-        "A CallBack to log samples a wandb.Table during training"
         super().__init__()
-        self._log_model = log_model
+        # self._log_model = log_model
         self.sample_dataset = test_dataset.take(num_samples)
         self.model, self.tokenizer = trainer.model, trainer.tokenizer
         self.gen_config = GenerationConfig.from_pretrained(trainer.model.name_or_path,
