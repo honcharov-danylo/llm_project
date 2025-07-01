@@ -18,8 +18,10 @@ from transformers import DataCollatorForLanguageModeling
 from peft import LoraConfig, get_peft_model
 from trl import SFTTrainer, SFTConfig
 from transformers import TrainingArguments, TrainerCallback
+from transformers.integrations import WandbCallback
 from transformers import Seq2SeqTrainingArguments
 from sentence_transformers import SentenceTransformer, util
+from transformers import GenerationConfig
 
 import gc, torch
 import os, tempfile, wandb, json
@@ -27,6 +29,7 @@ import os, tempfile, wandb, json
 from lighteval.logging.evaluation_tracker import EvaluationTracker
 from lighteval.pipeline import Pipeline, PipelineParameters, ParallelismManager
 from lighteval.models.transformers.transformers_model import TransformersModelConfig
+
 import logging
 
 def run_lighteval(checkpoint_path, tasks):
@@ -181,32 +184,74 @@ style_bank = style_encoder.encode(
 
 logging.info("Eval dataset is encoded.")
 
-def compute_metrics(eval_pred):
-    # HF passes (generated_tokens, labels) or (logits, labels)
-    predictions = eval_pred.predictions
 
-    # a) decode
-    gen_texts = tokenizer.batch_decode(predictions,
-                                       skip_special_tokens=True,
-                                       clean_up_tokenization_spaces=True)
+class LLMSampleCB(WandbCallback):
+    def __init__(self, trainer, test_dataset, num_samples=10, max_new_tokens=256, log_model="checkpoint"):
+        "A CallBack to log samples a wandb.Table during training"
+        super().__init__()
+        self._log_model = log_model
+        self.sample_dataset = test_dataset.select(range(num_samples))
+        self.model, self.tokenizer = trainer.model, trainer.tokenizer
+        self.gen_config = GenerationConfig.from_pretrained(trainer.model.name_or_path,
+                                                           max_new_tokens=max_new_tokens)
 
-    # b) embed
-    gen_emb = style_encoder.encode(
-        gen_texts,
-        batch_size=64,
-        normalize_embeddings=True,
-        device="cuda" if torch.cuda.is_available() else "cpu",
-    )                                            # shape = [len(gen), 384]
+    def generate(self, prompt):
+        tokenized_prompt = self.tokenizer(prompt, return_tensors='pt')['input_ids'].cuda()
+        with torch.inference_mode():
+            output = self.model.generate(tokenized_prompt, generation_config=self.gen_config)
+        return self.tokenizer.decode(output[0][len(tokenized_prompt[0]):], skip_special_tokens=True)
 
-    # c) cosine-sim to style bank
-    # util.cos_sim returns [gen, bank]; take max along bank axis
-    sims = util.cos_sim(torch.tensor(gen_emb), torch.tensor(style_bank))
-    max_sims = sims.max(dim=1).values.cpu().numpy()
+    def samples_table(self, examples):
+        "Create a wandb.Table to store the generations"
+        records_table = wandb.Table(columns=["prompt", "generation"] + list(self.gen_config.to_dict().keys()) + ["style_sim_mean", "style_sim_std"])
+        for example in tqdm(examples, leave=False):
+            prompt = example["text"]
+            generation = self.generate(prompt=prompt)
+            gen_emb = style_encoder.encode(
+                generation,
+                batch_size=64,
+                normalize_embeddings=True,
+                device="cuda" if torch.cuda.is_available() else "cpu",
+            )                                            # shape = [len(gen), 384]
+            sims = util.cos_sim(torch.tensor(gen_emb), torch.tensor(style_bank))
+            max_sims = sims.max(dim=1).values.cpu().numpy()
 
-    return {
-        "style_sim_mean": float(max_sims.mean()),
-        "style_sim_std":  float(max_sims.std()),
-    }
+            records_table.add_data(prompt, generation, *list(self.gen_config.to_dict().values()), max_sims.mean(), max_sims.std())
+        return records_table
+
+    def on_evaluate(self, args, state, control, **kwargs):
+        "Log the wandb.Table after calling trainer.evaluate"
+        super().on_evaluate(args, state, control, **kwargs)
+        records_table = self.samples_table(self.sample_dataset)
+        self._wandb.log({"sample_predictions": records_table})
+
+
+# def compute_metrics(eval_pred):
+#     # HF passes (generated_tokens, labels) or (logits, labels)
+#     predictions = eval_pred.predictions
+#
+#     # a) decode
+#     gen_texts = tokenizer.batch_decode(predictions,
+#                                        skip_special_tokens=True,
+#                                        clean_up_tokenization_spaces=True)
+#
+#     # b) embed
+#     gen_emb = style_encoder.encode(
+#         gen_texts,
+#         batch_size=64,
+#         normalize_embeddings=True,
+#         device="cuda" if torch.cuda.is_available() else "cpu",
+#     )                                            # shape = [len(gen), 384]
+#
+#     # c) cosine-sim to style bank
+#     # util.cos_sim returns [gen, bank]; take max along bank axis
+#     sims = util.cos_sim(torch.tensor(gen_emb), torch.tensor(style_bank))
+#     max_sims = sims.max(dim=1).values.cpu().numpy()
+#
+#     return {
+#         "style_sim_mean": float(max_sims.mean()),
+#         "style_sim_std":  float(max_sims.std()),
+#     }
 
 
 
@@ -292,7 +337,7 @@ training_arguments = TrainingArguments(
     eval_steps=0.01,
     save_steps=0.01,
     # predict_with_generate=True,
-    generation_max_length=128
+    # generation_max_length=128
 )
 
 
@@ -307,11 +352,17 @@ trainer = SFTTrainer(
     data_collator=data_collator,
     callbacks = callbacks,
     eval_dataset=eval_dataset,
-    compute_metrics=compute_metrics
+    # compute_metrics=compute_metrics
 )
 logging.info("Starting training")
+
+
+wandb_callback = LLMSampleCB(trainer, eval_dataset, num_samples=20, max_new_tokens=256)
+trainer.add_callback(wandb_callback)
 
 gc.collect()
 torch.cuda.empty_cache()
 model.config.use_cache = False
 trainer.train()
+
+wandb.finish()
