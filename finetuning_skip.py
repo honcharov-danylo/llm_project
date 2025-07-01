@@ -191,7 +191,7 @@ class LLMSampleCB(WandbCallback):
         "A CallBack to log samples a wandb.Table during training"
         super().__init__()
         self._log_model = log_model
-        self.sample_dataset = test_dataset.select(range(num_samples))
+        self.sample_dataset = test_dataset.take(num_samples)
         self.model, self.tokenizer = trainer.model, trainer.tokenizer
         self.gen_config = GenerationConfig.from_pretrained(trainer.model.name_or_path,
                                                            max_new_tokens=max_new_tokens)
