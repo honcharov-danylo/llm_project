@@ -99,7 +99,8 @@ callbacks = [LightEvalCallback(light_tasks, freq=500)]  # every 3rd eval ⇒ eve
 
 
 
-model_dir = "Qwen/Qwen2.5-3B-Instruct"
+# model_dir = "Qwen/Qwen2.5-3B-Instruct"
+model_dir = "Qwen/Qwen2.5-0.5B"
 tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True, max_length = 50000)
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
