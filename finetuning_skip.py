@@ -23,6 +23,7 @@ from transformers.integrations import WandbCallback
 from transformers import Seq2SeqTrainingArguments
 from sentence_transformers import SentenceTransformer, util
 from transformers import GenerationConfig
+import json
 
 import gc, torch
 import os, tempfile, wandb, json
@@ -32,6 +33,11 @@ from lighteval.pipeline import Pipeline, PipelineParameters, ParallelismManager
 from lighteval.models.transformers.transformers_model import TransformersModelConfig
 
 import logging
+
+
+with open("config.json", 'r') as f:
+    config = json.load(f)
+
 
 def run_lighteval(checkpoint_path, tasks):
     tracker = EvaluationTracker(output_dir="./le_results", save_details=False)
@@ -100,8 +106,8 @@ callbacks = [LightEvalCallback(light_tasks, freq=500)]  # every 3rd eval ⇒ eve
 
 
 
-# model_dir = "Qwen/Qwen2.5-3B-Instruct"
-model_dir = "Qwen/Qwen2.5-0.5B"
+model_dir = config["model_dir"]
+# model_dir = "Qwen/Qwen2.5-0.5B"
 tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True, max_length = 50000)
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
@@ -130,14 +136,22 @@ Please, write next paragraph for the following text.
 
 logging.info("Loading dataset:")
 
-inputs = []
-for file in os.listdir("data/"):
-    with open("data/{}".format(file)) as f:
-        inputs.append(f.read())
-del inputs[6326] # broken file
+
+if config['load_cleaned']:
+    inputs = []
+    for file in os.listdir(config["data_path"]):
+        with open("{}/{}".format(config["data_path"], file), "r") as f:
+            subsamples = json.load(f)
+            inputs.extend(list(subsamples.values()))
+else:
+    inputs = []
+    for file in os.listdir(config["data_path"]):
+        with open("{}/{}".format(config["data_path"], file)) as f:
+            inputs.append(f.read())
+    del inputs[6326] # broken file
 
 # temporary reduction of dataset size for testing
-inputs = inputs[:100]
+# inputs = inputs[:100]
 
 logging.info("Data loaded.")
 
