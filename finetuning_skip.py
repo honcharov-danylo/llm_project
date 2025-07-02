@@ -24,6 +24,7 @@ from transformers import Seq2SeqTrainingArguments
 from sentence_transformers import SentenceTransformer, util
 from transformers import GenerationConfig
 import json
+import gzip
 
 import gc, torch
 import os, tempfile, wandb, json
@@ -140,7 +141,7 @@ logging.info("Loading dataset:")
 if config['load_cleaned']:
     inputs = []
     for file in os.listdir(config["data_path"]):
-        with open("{}/{}".format(config["data_path"], file), "r") as f:
+        with gzip.open("{}/{}".format(config["data_path"], file), "rt") as f:
             subsamples = json.load(f)
             inputs.extend(list(subsamples.values()))
 else:
