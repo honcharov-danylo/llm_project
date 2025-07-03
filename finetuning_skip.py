@@ -103,7 +103,7 @@ light_tasks = [
     "leaderboard|truthfulqa:mc|0|0",
     "leaderboard|gsm8k|0|true",
 ]
-callbacks = [LightEvalCallback(light_tasks, freq=500)]  # every 3rd eval ⇒ every 1500 steps
+callbacks = [LightEvalCallback(light_tasks, freq=16)]  # every 3rd eval ⇒ every 1500 steps
 
 
 
@@ -332,6 +332,7 @@ steps = int(1000000/batch_size)
 eval_dataset = eval_dataset_mapped.take(128)
 
 logging.info("Model loaded. Building training arguments.")
+eval_every = int(0.02 * steps)
 
 # Training Arguments
 training_arguments = TrainingArguments(
@@ -350,8 +351,8 @@ training_arguments = TrainingArguments(
     bf16=False,
     report_to=["wandb"],
     eval_strategy="steps",
-    eval_steps=0.01,
-    save_steps=0.01,
+    eval_steps= eval_every, #0.01,
+    save_steps= eval_every,#0.01,
     # predict_with_generate=True,
     # generation_max_length=128
 )
