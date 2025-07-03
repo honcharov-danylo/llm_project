@@ -1,0 +1,9 @@
+[submodule "llm_scripts"]
+	path = llm_scripts
+	url = git@github.com:honcharov-danylo/llm_scripts
+[submodule "eval_scripts"]
+	path = eval_scripts
+	url = git@github.com:honcharov-danylo/eval_scripts
+[submodule "clean_scripts"]
+	path = clean_scripts
+	url = git@github.com:honcharov-danylo/clean_scripts
