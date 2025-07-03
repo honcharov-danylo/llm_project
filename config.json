@@ -2,6 +2,6 @@
   "data_path": "/home/dhonchar/llm_project/clean_scripts/cleaned_data/",
   "load_cleaned": true,
   "model_dir": "Qwen/Qwen2.5-3B-Instruct",
-  "finetuned_path": "finetuned_smaller",
-  "batch_size": 4
+  "finetuned_path": "/home/dhonchar/llm_project/trained_models/1",
+  "batch_size": 16
 }
