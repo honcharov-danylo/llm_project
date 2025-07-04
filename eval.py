@@ -58,10 +58,20 @@ inputs_in = [test_prompt_style.format(x[:int(len(x)/2)]) + tokenizer.eos_token f
 inputs_out = [x[int(len(x)/2):] for x in inputs]
 
 
+# inputs_formatted = tokenizer(
+#     inputs_in,
+#     return_tensors="pt"
+# ).to("cuda")
+
+max_seq_len = tokenizer.model_max_length          # e.g. 4096 for Llama-family, 131 072 for RWKV-world etc.
 inputs_formatted = tokenizer(
     inputs_in,
-    return_tensors="pt"
+    return_tensors="pt",
+    padding=True,             # or "longest"
+    truncation=True,          # **required** so over-length samples are cut
+    max_length=max_seq_len    # be explicit; you can also set a smaller value
 ).to("cuda")
+
 
 outputs_orig = base.generate(
     input_ids=inputs_formatted.input_ids,
