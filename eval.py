@@ -6,8 +6,11 @@ import os
 import logging
 import gzip
 import simphile
+from itertools import islice
 import spacy
 import tqdm
+import torch
+
 
 # device = "cpu" # can be "cpu" or "cuda
 # inference on cuda takes too much memory
@@ -63,34 +66,85 @@ inputs_out = [x[int(len(x)/2):] for x in inputs]
 #     return_tensors="pt"
 # ).to("cuda")
 
-max_seq_len = tokenizer.model_max_length          # e.g. 4096 for Llama-family, 131 072 for RWKV-world etc.
-inputs_formatted = tokenizer(
-    inputs_in,
-    return_tensors="pt",
-    padding=True,             # or "longest"
-    truncation=True,          # **required** so over-length samples are cut
-    max_length=max_seq_len    # be explicit; you can also set a smaller value
-).to("cuda")
+# max_seq_len = tokenizer.model_max_length          # e.g. 4096 for Llama-family, 131 072 for RWKV-world etc.
+# inputs_formatted = tokenizer(
+#     inputs_in,
+#     return_tensors="pt",
+#     padding=True,             # or "longest"
+#     truncation=True,          # **required** so over-length samples are cut
+#     max_length=max_seq_len    # be explicit; you can also set a smaller value
+# ).to("cuda")
+#
+#
+# outputs_orig = base.generate(
+#     input_ids=inputs_formatted.input_ids,
+#     attention_mask=inputs_formatted.attention_mask,
+#     max_new_tokens=1200,
+#     eos_token_id=tokenizer.eos_token_id,
+#     use_cache=True)
+#
+# outputs = model.generate(
+#     input_ids=inputs_formatted.input_ids,
+#     attention_mask=inputs_formatted.attention_mask,
+#     max_new_tokens=1200,
+#     eos_token_id=tokenizer.eos_token_id,
+#     use_cache=True
+# )
 
+batch_size = config.get("batch_size", 4)       # try smaller if you OOM
+# ----------------------------------
 
-outputs_orig = base.generate(
-    input_ids=inputs_formatted.input_ids,
-    attention_mask=inputs_formatted.attention_mask,
-    max_new_tokens=1200,
-    eos_token_id=tokenizer.eos_token_id,
-    use_cache=True)
+def batched(iterable, n):
+    """Yield successive n-sized chunks from iterable."""
+    it = iter(iterable)
+    while (chunk := list(islice(it, n))):
+        yield chunk
 
-outputs = model.generate(
-    input_ids=inputs_formatted.input_ids,
-    attention_mask=inputs_formatted.attention_mask,
-    max_new_tokens=1200,
-    eos_token_id=tokenizer.eos_token_id,
-    use_cache=True
-)
+all_outputs_orig, all_outputs_ft = [], []
 
-responses_orig = tokenizer.batch_decode(outputs_orig, skip_special_tokens=True)
+base.eval()
+model.eval()
 
-responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+with torch.no_grad():                          # no grads for inference
+    for chunk in batched(inputs_in, batch_size):
+
+        encoded = tokenizer(
+            chunk,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=tokenizer.model_max_length
+        ).to("cuda")
+
+        # === base model ===
+        outs_base = base.generate(
+            **encoded,
+            max_new_tokens=1200,
+            eos_token_id=tokenizer.eos_token_id,
+            use_cache=True
+        )
+        all_outputs_orig.extend(
+            tokenizer.batch_decode(outs_base, skip_special_tokens=True)
+        )
+
+        # === finetuned (PEFT) model ===
+        outs_ft = model.generate(
+            **encoded,
+            max_new_tokens=1200,
+            eos_token_id=tokenizer.eos_token_id,
+            use_cache=True
+        )
+        all_outputs_ft.extend(
+            tokenizer.batch_decode(outs_ft, skip_special_tokens=True)
+        )
+
+# replace the old variables so the rest of the script stays unchanged
+responses_orig = all_outputs_orig
+responses       = all_outputs_ft
+
+# responses_orig = tokenizer.batch_decode(outputs_orig, skip_special_tokens=True)
+#
+# responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
 nlp = spacy.load("en_core_web_sm")
 
