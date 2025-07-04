@@ -106,8 +106,7 @@ base.eval()
 model.eval()
 
 with torch.no_grad():                          # no grads for inference
-    for chunk in batched(inputs_in, batch_size):
-
+    for chunk in tqdm(batched(inputs_in, batch_size)):
         encoded = tokenizer(
             chunk,
             return_tensors="pt",
