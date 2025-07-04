@@ -7,6 +7,7 @@ import logging
 import gzip
 import simphile
 import spacy
+import tqdm
 
 # device = "cpu" # can be "cpu" or "cuda
 # inference on cuda takes too much memory
@@ -51,6 +52,7 @@ else:
             inputs.append(f.read())
     del inputs[6326] # broken file
 
+inputs = inputs[:100]
 
 inputs_in = [test_prompt_style.format(x[:int(len(x)/2)]) + tokenizer.eos_token for x in inputs]
 inputs_out = [x[int(len(x)/2):] for x in inputs]
