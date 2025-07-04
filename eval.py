@@ -8,7 +8,7 @@ import gzip
 import simphile
 from itertools import islice
 import spacy
-import tqdm
+from tqdm import tqdm
 import torch
 
 
