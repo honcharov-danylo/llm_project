@@ -57,8 +57,8 @@ else:
 
 inputs = inputs[:100]
 
-inputs_in = [test_prompt_style.format(x[:int(len(x)/2)]) + tokenizer.eos_token for x in inputs]
-inputs_out = [x[int(len(x)/2):] for x in inputs]
+inputs_in = [test_prompt_style.format(x[:int(len(x)/4)]) + tokenizer.eos_token for x in inputs]
+inputs_out = [x[int(len(x)/4):int(len(x)/2)] for x in inputs]
 
 
 # inputs_formatted = tokenizer(
@@ -95,7 +95,6 @@ batch_size = config.get("batch_size", 4)       # try smaller if you OOM
 # ----------------------------------
 
 def batched(iterable, n):
-    """Yield successive n-sized chunks from iterable."""
     it = iter(iterable)
     while (chunk := list(islice(it, n))):
         yield chunk
