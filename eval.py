@@ -78,16 +78,14 @@ outputs_orig = base.generate(
     attention_mask=inputs_formatted.attention_mask,
     max_new_tokens=1200,
     eos_token_id=tokenizer.eos_token_id,
-    use_cache=True,
-    batch_size=config["batch_size"],)
+    use_cache=True)
 
 outputs = model.generate(
     input_ids=inputs_formatted.input_ids,
     attention_mask=inputs_formatted.attention_mask,
     max_new_tokens=1200,
     eos_token_id=tokenizer.eos_token_id,
-    use_cache=True,
-    batch_size=config["batch_size"],
+    use_cache=True
 )
 
 responses_orig = tokenizer.batch_decode(outputs_orig, skip_special_tokens=True)
