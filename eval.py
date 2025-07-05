@@ -55,10 +55,10 @@ else:
             inputs.append(f.read())
     del inputs[6326] # broken file
 
-inputs = inputs[:100]
+inputs = inputs[:200]
 
-inputs_in = [test_prompt_style.format(x[:int(len(x)/4)]) + tokenizer.eos_token for x in inputs]
-inputs_out = [x[int(len(x)/4):int(len(x)/2)] for x in inputs]
+inputs_in = [test_prompt_style.format(x[:int(len(x)/8)]) + tokenizer.eos_token for x in inputs]
+inputs_out = [x[int(len(x)/8):int(len(x)/4)] for x in inputs]
 
 
 # inputs_formatted = tokenizer(
@@ -114,7 +114,6 @@ with torch.no_grad():                          # no grads for inference
             max_length=tokenizer.model_max_length
         ).to("cuda")
 
-        # === base model ===
         outs_base = base.generate(
             **encoded,
             max_new_tokens=1200,
