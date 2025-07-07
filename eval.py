@@ -78,9 +78,7 @@ for i, llm_doc in enumerate(inputs):
 
 corpus.tokenise(tokenise_remove_pronouns_en)
 
-inputs = inputs[:2] # make 250
-
-
+inputs = inputs[:config.get("eval_size", 32)]
 
 def cut_length_in(x, config):
     ct_l = min(len(x)//8, config.get("eval_length_prompt", 2048))
