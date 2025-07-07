@@ -27,7 +27,7 @@ llm_titles = llm_corpora.to_pandas()["doc_id"].tolist()
 
 corpus = Corpus()
 for i, llm_doc in enumerate(llm_corpus):
-    corpus.add_book("LLM-corpus", llm_titles[i], [llm_doc])
+    corpus.add_book("LLM-corpus", llm_titles[i], llm_doc)
 
 
 # device = "cpu" # can be "cpu" or "cuda
