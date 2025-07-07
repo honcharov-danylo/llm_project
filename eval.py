@@ -55,10 +55,20 @@ else:
             inputs.append(f.read())
     del inputs[6326] # broken file
 
-inputs = inputs[:200]
+inputs = inputs[:50]
 
-inputs_in = [test_prompt_style.format(x[:int(len(x)/8)]) + tokenizer.eos_token for x in inputs]
-inputs_out = [x[int(len(x)/8):int(len(x)/4)] for x in inputs]
+def cut_length_in(x, config):
+    ct_l = min(len(x//8), config.get("eval_length_prompt", 2048))
+    return x[:ct_l]
+
+def cut_length_response(x, config):
+    ct_l = min(len(x // 8), config.get("eval_length_prompt", 2048))
+    cl_2 = min(len(x//8), config.get("eval_length_response", 2048))
+    return x[ct_l:ct_l + cl_2]
+
+
+inputs_in = [test_prompt_style.format(cut_length_in(x, config)) + tokenizer.eos_token for x in inputs]
+inputs_out = [cut_length_response(x, config) for x in inputs]
 
 
 # inputs_formatted = tokenizer(

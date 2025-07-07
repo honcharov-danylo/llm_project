@@ -3,5 +3,7 @@
   "load_cleaned": true,
   "model_dir": "Qwen/Qwen2.5-3B-Instruct",
   "finetuned_path": "/home/dhonchar/llm_project/trained_models/1",
-  "batch_size": 1
+  "batch_size": 1,
+  "eval_length_prompt": 2048,
+  "eval_length_response": 2048
 }
