@@ -76,7 +76,7 @@ else:
 for i, llm_doc in enumerate(inputs):
     corpus.add_book("Our corpus", str(i), [llm_doc])
 
-inputs = inputs[:50]
+inputs = inputs[:10]
 
 
 
