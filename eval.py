@@ -58,12 +58,12 @@ else:
 inputs = inputs[:50]
 
 def cut_length_in(x, config):
-    ct_l = min(len(x//8), config.get("eval_length_prompt", 2048))
+    ct_l = min(len(x)//8, config.get("eval_length_prompt", 2048))
     return x[:ct_l]
 
 def cut_length_response(x, config):
-    ct_l = min(len(x // 8), config.get("eval_length_prompt", 2048))
-    cl_2 = min(len(x//8), config.get("eval_length_response", 2048))
+    ct_l = min(len(x)//8, config.get("eval_length_prompt", 2048))
+    cl_2 = min(len(x)//8, config.get("eval_length_response", 2048))
     return x[ct_l:ct_l + cl_2]
 
 
