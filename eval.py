@@ -76,7 +76,9 @@ else:
 for i, llm_doc in enumerate(inputs):
     corpus.add_book("Our corpus", str(i), [llm_doc])
 
-inputs = inputs[:10]
+corpus.tokenise(tokenise_remove_pronouns_en)
+
+inputs = inputs[:2]
 
 
 
@@ -181,8 +183,11 @@ responses       = all_outputs_ft
 for i, resp in enumerate(responses_orig):
     test_corpus_orig.add_book("Test corpus", str(i), resp)
 
+test_corpus_orig.tokenise(tokenise_remove_pronouns_en)
+
 for i, resp in enumerate(responses):
     test_corpus_finetuned.add_book("Test corpus, finetuned", str(i),resp)
+test_corpus_finetuned.tokenise(tokenise_remove_pronouns_en)
 
 nlp = spacy.load("en_core_web_md")
 
