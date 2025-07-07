@@ -78,7 +78,7 @@ for i, llm_doc in enumerate(inputs):
 
 corpus.tokenise(tokenise_remove_pronouns_en)
 
-inputs = inputs[:2]
+inputs = inputs[:2] # make 250
 
 
 
@@ -187,6 +187,7 @@ test_corpus_orig.tokenise(tokenise_remove_pronouns_en)
 
 for i, resp in enumerate(responses):
     test_corpus_finetuned.add_book("Test corpus, finetuned", str(i), resp)
+
 test_corpus_finetuned.tokenise(tokenise_remove_pronouns_en)
 
 nlp = spacy.load("en_core_web_md")
@@ -199,14 +200,14 @@ results["orig"]["jaccard"] = [simphile.jaccard_similarity(x, inputs_out[i]) for 
 results["orig"]["compression"] = [simphile.compression_similarity(x, inputs_out[i]) for i,x in enumerate(responses_orig)]
 results["orig"]["spacy_sim"] = [nlp(x).similarity(nlp_input_out[i]) for i,x in enumerate(responses_orig)]
 
-results["orig"]["burrows"] = calculate_burrows_delta(llm_corpus, test_corpus_orig, vocab_size = 100).to_dict()
+results["orig"]["burrows"] = calculate_burrows_delta(corpus, test_corpus_orig, vocab_size = 100).to_dict()
 
 results["finetuned"] = dict()
 results["finetuned"]["jaccard"] = [simphile.jaccard_similarity(x, inputs_out[i]) for i,x in enumerate(responses)]
 results["finetuned"]["compression"] = [simphile.compression_similarity(x, inputs_out[i]) for i,x in enumerate(responses)]
 results["finetuned"]["spacy_sim"] = [nlp(x).similarity(nlp_input_out[i]) for i,x in enumerate(responses)]
 
-results["finetuned"]["burrows"] = calculate_burrows_delta(llm_corpus, test_corpus_finetuned, vocab_size = 100).to_dict()
+results["finetuned"]["burrows"] = calculate_burrows_delta(corpus, test_corpus_finetuned, vocab_size = 100).to_dict()
 
 with open("out/out.json", "w") as f:
     json.dump(results, f)
