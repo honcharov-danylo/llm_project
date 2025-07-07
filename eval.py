@@ -10,6 +10,24 @@ from itertools import islice
 import spacy
 from tqdm import tqdm
 import torch
+import faststylometry
+from faststylometry import Corpus, tokenise_remove_pronouns_en, calculate_burrows_delta, predict_proba, calibrate
+import nltk
+import datasets
+from datasets import load_dataset
+import pandas as pd
+
+nltk.download("punkt")
+
+
+llm_corpora = load_dataset("browndw/human-ai-parallel-corpus")["train"]
+llm_corpus = llm_corpora.to_pandas()["text"].tolist()
+llm_titles = llm_corpora.to_pandas()["doc_id"].tolist()
+
+
+corpus = Corpus()
+for i, llm_doc in enumerate(llm_corpus):
+    corpus.add_book("LLM-corpus", llm_titles[i], [llm_doc])
 
 
 # device = "cpu" # can be "cpu" or "cuda
@@ -55,7 +73,12 @@ else:
             inputs.append(f.read())
     del inputs[6326] # broken file
 
+for i, llm_doc in enumerate(inputs):
+    corpus.add_book("Our corpus", str(i), [llm_doc])
+
 inputs = inputs[:50]
+
+
 
 def cut_length_in(x, config):
     ct_l = min(len(x)//8, config.get("eval_length_prompt", 2048))
@@ -100,6 +123,9 @@ inputs_out = [cut_length_response(x, config) for x in inputs]
 #     eos_token_id=tokenizer.eos_token_id,
 #     use_cache=True
 # )
+
+test_corpus_orig = Corpus()
+test_corpus_finetuned = Corpus()
 
 batch_size = config.get("batch_size", 4)       # try smaller if you OOM
 # ----------------------------------
@@ -152,8 +178,13 @@ responses       = all_outputs_ft
 # responses_orig = tokenizer.batch_decode(outputs_orig, skip_special_tokens=True)
 #
 # responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+for i, resp in enumerate(responses_orig):
+    test_corpus_orig.add_book("Test corpus", str(i), resp)
 
-nlp = spacy.load("en_core_web_sm")
+for i, resp in enumerate(responses):
+    test_corpus_finetuned.add_book("Test corpus, finetuned", str(i),resp)
+
+nlp = spacy.load("en_core_web_md")
 
 nlp_input_out = [nlp(x) for x in inputs_out]
 
@@ -163,11 +194,14 @@ results["orig"]["jaccard"] = [simphile.jaccard_similarity(x, inputs_out[i]) for 
 results["orig"]["compression"] = [simphile.compression_similarity(x, inputs_out[i]) for i,x in enumerate(responses_orig)]
 results["orig"]["spacy_sim"] = [nlp(x).similarity(nlp_input_out[i]) for i,x in enumerate(responses_orig)]
 
+results["orig"]["burrows"] = calculate_burrows_delta(llm_corpus, test_corpus_orig, vocab_size = 100).to_dict()
 
 results["finetuned"] = dict()
 results["finetuned"]["jaccard"] = [simphile.jaccard_similarity(x, inputs_out[i]) for i,x in enumerate(responses)]
 results["finetuned"]["compression"] = [simphile.compression_similarity(x, inputs_out[i]) for i,x in enumerate(responses)]
 results["finetuned"]["spacy_sim"] = [nlp(x).similarity(nlp_input_out[i]) for i,x in enumerate(responses)]
+
+results["finetuned"]["burrows"] = calculate_burrows_delta(llm_corpus, test_corpus_finetuned, vocab_size = 100).to_dict()
 
 with open("out/out.json", "w") as f:
     json.dump(results, f)
