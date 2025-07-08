@@ -103,7 +103,7 @@ light_tasks = [
     "leaderboard|truthfulqa:mc|0|0",
     "leaderboard|gsm8k|0|true",
 ]
-callbacks = [LightEvalCallback(light_tasks, freq=16)]  # every 3rd eval ⇒ every 1500 steps
+callbacks = [LightEvalCallback(light_tasks, freq=512)]  # every 3rd eval ⇒ every 1500 steps
 
 
 
@@ -327,12 +327,12 @@ peft_config = LoraConfig(
 model = get_peft_model(model, peft_config)
 
 batch_size = 4
-steps = int(1000000/batch_size)
+steps = int(500000/batch_size)
 
 eval_dataset = eval_dataset_mapped.take(128)
 
 logging.info("Model loaded. Building training arguments.")
-eval_every = int(0.02 * steps)
+eval_every = int(0.1 * steps)
 
 # Training Arguments
 training_arguments = TrainingArguments(
