@@ -3,7 +3,7 @@ os.environ["WANDB_PROJECT"] = "llm-finetuning-skip-stylo"   # must come before T
 os.environ["WANDB_LOG_MODEL"] = "checkpoint"
 #import subprocess
 #subprocess.run("yes | pip install bitsandbytes")
-
+import itertools
 import transformers.utils
 transformers.utils.is_rich_available = lambda: False
 
@@ -45,13 +45,14 @@ def run_lighteval(checkpoint_path, tasks):
 
     pipe_params = PipelineParameters(
         launcher_type=ParallelismManager.ACCELERATE,
-        env_config=None,                 # uses HF_CACHE by default
+        env_config=None,
     )
 
     model_cfg = TransformersModelConfig(
-        model_name=checkpoint_path,      # local dir with snapshot from your callback
+        model_name=checkpoint_path,
         dtype="float16",
         use_chat_template=True,
+        device_map="cpu",
     )
 
     pipeline = Pipeline(
@@ -103,7 +104,7 @@ light_tasks = [
     "leaderboard|truthfulqa:mc|0|0",
     "leaderboard|gsm8k|0|true",
 ]
-callbacks = [LightEvalCallback(light_tasks, freq=512)]  # every 3rd eval ⇒ every 1500 steps
+callbacks = [LightEvalCallback(light_tasks, freq=4)]  # every 3rd eval ⇒ every 1500 steps
 
 
 
@@ -202,20 +203,41 @@ style_bank = style_encoder.encode(
 logging.info("Eval dataset is encoded.")
 
 
+
 class LLMSampleCB(WandbCallback):
-    def __init__(self, trainer, test_dataset, num_samples=10, max_new_tokens=256, log_model="checkpoint"):
+    def __init__(self, trainer, test_prompts, max_new_tokens=256, log_model="checkpoint"):
         super().__init__()
         # self._log_model = log_model
-        self.sample_dataset = test_dataset.take(num_samples)
+        # self.sample_dataset = test_dataset.take(num_samples)
+        self.sample_dataset = test_prompts
         self.model, self.tokenizer = trainer.model, trainer.tokenizer
         self.gen_config = GenerationConfig.from_pretrained(trainer.model.name_or_path,
                                                            max_new_tokens=max_new_tokens)
 
     def generate(self, prompt):
-        tokenized_prompt = self.tokenizer(prompt, return_tensors='pt')['input_ids'].cuda()
+        max_ctx = self.model.config.max_position_embeddings
+        max_new = self.gen_config.max_new_tokens
+        max_in = max_ctx - max_new - 1
+        tokens = self.tokenizer(
+            prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=max_in,
+        )["input_ids"].to(self.model.device)
+
         with torch.inference_mode():
-            output = self.model.generate(tokenized_prompt, generation_config=self.gen_config)
-        return self.tokenizer.decode(output[0][len(tokenized_prompt[0]):], skip_special_tokens=True)
+            out = self.model.generate(
+                tokens,
+                generation_config=self.gen_config,
+            )
+        return self.tokenizer.decode(
+            out[0, tokens.size(1):],  # strip the prompt
+            skip_special_tokens=True,
+        )
+        # tokenized_prompt = self.tokenizer(prompt, return_tensors='pt')['input_ids'].cuda()
+        # with torch.inference_mode():
+        #     output = self.model.generate(tokenized_prompt, generation_config=self.gen_config)
+        # return self.tokenizer.decode(output[0][len(tokenized_prompt[0]):], skip_special_tokens=True)
 
     def samples_table(self, examples):
         "Create a wandb.Table to store the generations"
@@ -332,7 +354,7 @@ steps = int(500000/batch_size)
 eval_dataset = eval_dataset_mapped.take(128)
 
 logging.info("Model loaded. Building training arguments.")
-eval_every = int(0.1 * steps)
+eval_every = int(0.01 * steps)
 
 # Training Arguments
 training_arguments = TrainingArguments(
@@ -368,13 +390,24 @@ trainer = SFTTrainer(
     peft_config=peft_config,
     data_collator=data_collator,
     callbacks = callbacks,
-    eval_dataset=eval_dataset,
+    eval_dataset = eval_dataset,
     # compute_metrics=compute_metrics
 )
 logging.info("Starting training")
 
+tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True)
 
-wandb_callback = LLMSampleCB(trainer, eval_dataset, num_samples=20, max_new_tokens=256)
+short_prompts = [
+    tokenizer.decode(
+        tokenizer(text,
+                  truncation=True,
+                  max_length=512)["input_ids"]
+    )
+    for text in itertools.islice(eval_dataset, 20)
+]
+
+# wandb_callback = LLMSampleCB(trainer, eval_dataset, num_samples=20, max_new_tokens=256)
+wandb_callback = LLMSampleCB(trainer, short_prompts, num_samples=20, max_new_tokens=256)
 trainer.add_callback(wandb_callback)
 
 gc.collect()
