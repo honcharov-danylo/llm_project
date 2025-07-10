@@ -261,17 +261,19 @@ def formatting_prompts_func(examples):
 logging.info("Formatting datasets:")
 
 
-def truncate_long_prompts(example):
-    ids = tokenizer.encode(example["text"],
-                           add_special_tokens=False,
-                           truncation=False)
-
-    if len(ids) > 4096:
-        ids = ids[:4096]
-        example["text"] = tokenizer.decode(ids, skip_special_tokens=True)
-
-    return example
-
+def truncate_long_prompts(batch):
+    trimmed = []
+    for txt in batch["text"]:                 # txt is a string
+        ids = tokenizer.encode(
+            txt,
+            add_special_tokens=False,
+            truncation=False,
+        )
+        if len(ids) > config["max_eval_tok"]:
+            ids = ids[:config["max_eval_tok"]]
+            txt = tokenizer.decode(ids, skip_special_tokens=True)
+        trimmed.append(txt)
+    return {"text": trimmed}
 
 
 dataset = ds.map(
@@ -282,7 +284,7 @@ dataset = ds.map(
 eval_dataset_mapped = eval_ds.map(
     formatting_prompts_func,
     batched=True,
-).map(truncate_long_prompts)
+).map(truncate_long_prompts, batched=True,)
 
 
 logging.info("Datasets are formatted.")
