@@ -1,5 +1,6 @@
 {
   "data_path": "/home/dhonchar/llm_project/clean_scripts/cleaned_data/",
   "load_cleaned": true,
-  "model_dir": "Qwen/Qwen2.5-3B-Instruct"
+  "model_dir": "Qwen/Qwen2.5-3B-Instruct",
+  "max_eval_tok": 4096
 }
