@@ -205,39 +205,19 @@ logging.info("Eval dataset is encoded.")
 
 
 class LLMSampleCB(WandbCallback):
-    def __init__(self, trainer, test_prompts, max_new_tokens=256, log_model="checkpoint"):
+    def __init__(self, trainer, test_dataset, num_samples = 32, max_new_tokens=256, log_model="checkpoint"):
         super().__init__()
         # self._log_model = log_model
-        # self.sample_dataset = test_dataset.take(num_samples)
-        self.sample_dataset = test_prompts
+        self.sample_dataset = test_dataset.take(num_samples)
         self.model, self.tokenizer = trainer.model, trainer.tokenizer
         self.gen_config = GenerationConfig.from_pretrained(trainer.model.name_or_path,
                                                            max_new_tokens=max_new_tokens)
 
     def generate(self, prompt):
-        max_ctx = self.model.config.max_position_embeddings
-        max_new = self.gen_config.max_new_tokens
-        max_in = max_ctx - max_new - 1
-        tokens = self.tokenizer(
-            prompt,
-            return_tensors="pt",
-            truncation=True,
-            max_length=max_in,
-        )["input_ids"].to(self.model.device)
-
+        tokenized_prompt = self.tokenizer(prompt, return_tensors='pt')['input_ids'].cuda()
         with torch.inference_mode():
-            out = self.model.generate(
-                tokens,
-                generation_config=self.gen_config,
-            )
-        return self.tokenizer.decode(
-            out[0, tokens.size(1):],  # strip the prompt
-            skip_special_tokens=True,
-        )
-        # tokenized_prompt = self.tokenizer(prompt, return_tensors='pt')['input_ids'].cuda()
-        # with torch.inference_mode():
-        #     output = self.model.generate(tokenized_prompt, generation_config=self.gen_config)
-        # return self.tokenizer.decode(output[0][len(tokenized_prompt[0]):], skip_special_tokens=True)
+            output = self.model.generate(tokenized_prompt, generation_config=self.gen_config)
+        return self.tokenizer.decode(output[0][len(tokenized_prompt[0]):], skip_special_tokens=True)
 
     def samples_table(self, examples):
         "Create a wandb.Table to store the generations"
@@ -264,34 +244,6 @@ class LLMSampleCB(WandbCallback):
         self._wandb.log({"sample_predictions": records_table})
 
 
-# def compute_metrics(eval_pred):
-#     # HF passes (generated_tokens, labels) or (logits, labels)
-#     predictions = eval_pred.predictions
-#
-#     # a) decode
-#     gen_texts = tokenizer.batch_decode(predictions,
-#                                        skip_special_tokens=True,
-#                                        clean_up_tokenization_spaces=True)
-#
-#     # b) embed
-#     gen_emb = style_encoder.encode(
-#         gen_texts,
-#         batch_size=64,
-#         normalize_embeddings=True,
-#         device="cuda" if torch.cuda.is_available() else "cpu",
-#     )                                            # shape = [len(gen), 384]
-#
-#     # c) cosine-sim to style bank
-#     # util.cos_sim returns [gen, bank]; take max along bank axis
-#     sims = util.cos_sim(torch.tensor(gen_emb), torch.tensor(style_bank))
-#     max_sims = sims.max(dim=1).values.cpu().numpy()
-#
-#     return {
-#         "style_sim_mean": float(max_sims.mean()),
-#         "style_sim_std":  float(max_sims.std()),
-#     }
-
-
 
 
 def formatting_prompts_func(examples):
@@ -308,6 +260,20 @@ def formatting_prompts_func(examples):
 
 logging.info("Formatting datasets:")
 
+
+def truncate_long_prompts(example):
+    ids = tokenizer.encode(example["text"],
+                           add_special_tokens=False,
+                           truncation=False)
+
+    if len(ids) > 4096:
+        ids = ids[:4096]
+        example["text"] = tokenizer.decode(ids, skip_special_tokens=True)
+
+    return example
+
+
+
 dataset = ds.map(
     formatting_prompts_func,
     batched=True,
@@ -316,7 +282,7 @@ dataset = ds.map(
 eval_dataset_mapped = eval_ds.map(
     formatting_prompts_func,
     batched=True,
-)
+).map(truncate_long_prompts, num_proc=4)
 
 
 logging.info("Datasets are formatted.")
@@ -395,19 +361,8 @@ trainer = SFTTrainer(
 )
 logging.info("Starting training")
 
-tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True)
 
-short_prompts = [
-    tokenizer.decode(
-        tokenizer(text,
-                  truncation=True,
-                  max_length=512)["input_ids"]
-    )
-    for text in itertools.islice(eval_dataset, 20)
-]
-
-# wandb_callback = LLMSampleCB(trainer, eval_dataset, num_samples=20, max_new_tokens=256)
-wandb_callback = LLMSampleCB(trainer, short_prompts, num_samples=20, max_new_tokens=256)
+wandb_callback = LLMSampleCB(trainer, eval_dataset, num_samples=20, max_new_tokens=256)
 trainer.add_callback(wandb_callback)
 
 gc.collect()
