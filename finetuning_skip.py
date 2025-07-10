@@ -282,7 +282,7 @@ dataset = ds.map(
 eval_dataset_mapped = eval_ds.map(
     formatting_prompts_func,
     batched=True,
-).map(truncate_long_prompts, batched=True,)
+).map(truncate_long_prompts)
 
 
 logging.info("Datasets are formatted.")
