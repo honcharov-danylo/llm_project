@@ -104,7 +104,7 @@ light_tasks = [
     "leaderboard|truthfulqa:mc|0|0",
     "leaderboard|gsm8k|0|true",
 ]
-callbacks = [LightEvalCallback(light_tasks, freq=4)]  # every 3rd eval ⇒ every 1500 steps
+callbacks = [LightEvalCallback(light_tasks, freq=4)]
 
 
 
@@ -229,8 +229,7 @@ class LLMSampleCB(WandbCallback):
                 generation,
                 batch_size=64,
                 normalize_embeddings=True,
-                device="cuda" if torch.cuda.is_available() else "cpu",
-            )                                            # shape = [len(gen), 384]
+                device="cuda")
             sims = util.cos_sim(torch.tensor(gen_emb), torch.tensor(style_bank))
             max_sims = sims.max(dim=1).values.cpu().numpy()
 
@@ -322,7 +321,7 @@ steps = int(500000/batch_size)
 eval_dataset = eval_dataset_mapped.take(128)
 
 logging.info("Model loaded. Building training arguments.")
-eval_every = int(0.005 * steps)
+eval_every = int(0.01 * steps)
 
 # Training Arguments
 training_arguments = TrainingArguments(
@@ -364,8 +363,10 @@ trainer = SFTTrainer(
 logging.info("Starting training")
 
 
-wandb_callback = LLMSampleCB(trainer, eval_dataset, num_samples=20, max_new_tokens=256)
+wandb_callback = LLMSampleCB(trainer, eval_dataset, num_samples=1, max_new_tokens=256)
 trainer.add_callback(wandb_callback)
+
+trainer.evaluate()
 
 gc.collect()
 torch.cuda.empty_cache()
