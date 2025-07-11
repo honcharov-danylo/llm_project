@@ -222,7 +222,7 @@ class LLMSampleCB(WandbCallback):
     def samples_table(self, examples):
         "Create a wandb.Table to store the generations"
         records_table = wandb.Table(columns=["prompt", "generation"] + list(self.gen_config.to_dict().keys()) + ["style_sim_mean", "style_sim_std"])
-        for example in tqdm(examples, leave=False):
+        for example in tqdm(examples, leave=True):
             prompt = example["text"]
             generation = self.generate(prompt=prompt)
             gen_emb = style_encoder.encode(
