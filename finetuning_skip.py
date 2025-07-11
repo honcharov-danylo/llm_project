@@ -361,7 +361,7 @@ steps = int(500000/batch_size)
 eval_dataset = eval_dataset_mapped.take(128)
 
 logging.info("Model loaded. Building training arguments.")
-eval_every = int(0.001 * steps)
+eval_every = int(0.1 * steps)
 
 # Training Arguments
 training_arguments = TrainingArguments(
