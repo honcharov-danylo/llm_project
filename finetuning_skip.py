@@ -104,7 +104,7 @@ light_tasks = [
     "leaderboard|truthfulqa:mc|0|0",
     "leaderboard|gsm8k|0|true",
 ]
-callbacks = [LightEvalCallback(light_tasks, freq=4)]
+callbacks = [LightEvalCallback(light_tasks, freq=1000000)]
 
 
 
