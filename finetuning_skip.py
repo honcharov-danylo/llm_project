@@ -229,7 +229,7 @@ class LLMSampleCB(WandbCallback):
             truncation=True,
         ).to(self.model.device)
 
-        outs = self.model.generate(**tok, generation_config=self.gen_cfg)
+        outs = self.model.generate(**tok, generation_config=self.gen_config)
         return self.tokenizer.batch_decode(
             outs[:, tok["input_ids"].shape[1]:],
             skip_special_tokens=True,
@@ -260,10 +260,10 @@ class LLMSampleCB(WandbCallback):
         max_sims = sims.max(dim=1).values.cpu().numpy()
 
         cols = ["prompt", "generation"] \
-               + list(self.gen_cfg.to_dict().keys()) \
+               + list(self.gen_config.to_dict().keys()) \
                + ["style_sim_mean", "style_sim_std"]
         table = wandb.Table(columns=cols)
-        cfg_vals = list(self.gen_cfg.to_dict().values())
+        cfg_vals = list(self.gen_config.to_dict().values())
 
         for p, g, s in zip(prompts, gens, max_sims):
             table.add_data(p, g, *cfg_vals, float(s), 0.0)
