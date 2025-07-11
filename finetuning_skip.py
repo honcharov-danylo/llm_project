@@ -404,7 +404,7 @@ trainer = SFTTrainer(
 logging.info("Starting training")
 
 
-wandb_callback = LLMSampleCB(trainer, eval_dataset, num_samples=10, max_new_tokens=256)
+wandb_callback = LLMSampleCB(trainer, eval_dataset, chunk_size = 4, num_samples=10, max_new_tokens=256)
 trainer.add_callback(wandb_callback)
 
 trainer.evaluate()
