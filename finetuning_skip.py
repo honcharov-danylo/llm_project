@@ -244,7 +244,7 @@ class LLMSampleCB(WandbCallback):
             gens.extend(self._generate_chunk(sub))
 
         gen_emb = []
-        for start in range(0, len(gens), self.chunk_size):
+        for start in trange(0, len(gens), self.chunk_size):
             sub = gens[start:start + self.chunk_size]
             gen_emb.extend(
                 style_encoder.encode(
