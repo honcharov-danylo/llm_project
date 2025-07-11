@@ -205,11 +205,12 @@ logging.info("Eval dataset is encoded.")
 
 
 class LLMSampleCB(WandbCallback):
-    def __init__(self, trainer, test_dataset, num_samples = 32, max_new_tokens=256, log_model="checkpoint"):
+    def __init__(self, trainer, test_dataset, chunk_size=4,    num_samples = 32, max_new_tokens=256, log_model="checkpoint"):
         super().__init__()
         # self._log_model = log_model
         self.sample_dataset = test_dataset.take(num_samples)
         self.model, self.tokenizer = trainer.model, trainer.tokenizer
+        self.chunk_size = chunk_size
         self.gen_config = GenerationConfig.from_pretrained(trainer.model.name_or_path,
                                                            max_new_tokens=max_new_tokens)
 
@@ -219,28 +220,67 @@ class LLMSampleCB(WandbCallback):
             output = self.model.generate(tokenized_prompt, generation_config=self.gen_config)
         return self.tokenizer.decode(output[0][len(tokenized_prompt[0]):], skip_special_tokens=True)
 
-    def samples_table(self, examples):
-        "Create a wandb.Table to store the generations"
-        records_table = wandb.Table(columns=["prompt", "generation"] + list(self.gen_config.to_dict().keys()) + ["style_sim_mean", "style_sim_std"])
-        for example in tqdm(examples, leave=True):
-            prompt = example["text"]
-            generation = self.generate(prompt=prompt)
-            gen_emb = style_encoder.encode(
-                generation,
-                batch_size=64,
-                normalize_embeddings=True,
-                device="cuda")
-            sims = util.cos_sim(torch.tensor(gen_emb), torch.tensor(style_bank))
-            max_sims = sims.max(dim=1).values.cpu().numpy()
+    @torch.inference_mode()
+    def _generate_chunk(self, prompts):
+        tok = self.tokenizer(
+            prompts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+        ).to(self.model.device)
 
-            records_table.add_data(prompt, generation, *list(self.gen_config.to_dict().values()), max_sims.mean(), max_sims.std())
-        return records_table
+        outs = self.model.generate(**tok, generation_config=self.gen_cfg)
+        return self.tokenizer.batch_decode(
+            outs[:, tok["input_ids"].shape[1]:],
+            skip_special_tokens=True,
+        )
+
+    def samples_table(self):
+        prompts = [ex["text"] for ex in self.sample_dataset]
+        gens = []  # will collect all generations
+
+        for start in range(0, len(prompts), self.chunk_size):
+            sub = prompts[start:start + self.chunk_size]
+            gens.extend(self._generate_chunk(sub))
+
+        gen_emb = []
+        for start in range(0, len(gens), self.chunk_size):
+            sub = gens[start:start + self.chunk_size]
+            gen_emb.extend(
+                style_encoder.encode(
+                    sub,
+                    batch_size=self.chunk_size,
+                    normalize_embeddings=True,
+                    device="cuda",
+                )
+            )
+        gen_emb = torch.tensor(gen_emb, device="cuda")  # (N, 384)
+
+        sims = util.cos_sim(gen_emb, torch.tensor(style_bank, device="cuda"))
+        max_sims = sims.max(dim=1).values.cpu().numpy()
+
+        cols = ["prompt", "generation"] \
+               + list(self.gen_cfg.to_dict().keys()) \
+               + ["style_sim_mean", "style_sim_std"]
+        table = wandb.Table(columns=cols)
+        cfg_vals = list(self.gen_cfg.to_dict().values())
+
+        for p, g, s in zip(prompts, gens, max_sims):
+            table.add_data(p, g, *cfg_vals, float(s), 0.0)
+
+        return table
 
     def on_evaluate(self, args, state, control, **kwargs):
-        "Log the wandb.Table after calling trainer.evaluate"
         super().on_evaluate(args, state, control, **kwargs)
-        records_table = self.samples_table(self.sample_dataset)
-        self._wandb.log({"sample_predictions": records_table})
+        self._wandb.log(
+            {"sample_predictions": self.samples_table()},
+            step=state.global_step,
+        )
+    # def on_evaluate(self, args, state, control, **kwargs):
+    #     "Log the wandb.Table after calling trainer.evaluate"
+    #     super().on_evaluate(args, state, control, **kwargs)
+    #     records_table = self.samples_table(self.sample_dataset)
+    #     self._wandb.log({"sample_predictions": records_table})
 
 
 
