@@ -342,6 +342,7 @@ training_arguments = TrainingArguments(
     eval_strategy="steps",
     eval_steps= eval_every, #0.01,
     save_steps= eval_every,#0.01,
+    disable_tqdm=False
     # predict_with_generate=True,
     # generation_max_length=128
 )
@@ -363,7 +364,7 @@ trainer = SFTTrainer(
 logging.info("Starting training")
 
 
-wandb_callback = LLMSampleCB(trainer, eval_dataset, num_samples=1, max_new_tokens=256)
+wandb_callback = LLMSampleCB(trainer, eval_dataset, num_samples=10, max_new_tokens=256)
 trainer.add_callback(wandb_callback)
 
 trainer.evaluate()
