@@ -104,7 +104,8 @@ light_tasks = [
     "leaderboard|truthfulqa:mc|0|0",
     "leaderboard|gsm8k|0|true",
 ]
-callbacks = [LightEvalCallback(light_tasks, freq=1000000)]
+# callbacks = [LightEvalCallback(light_tasks, freq=1000000)]
+callbacks = []
 
 
 
@@ -404,7 +405,7 @@ trainer = SFTTrainer(
 logging.info("Starting training")
 
 
-wandb_callback = LLMSampleCB(trainer, eval_dataset, chunk_size = 4, num_samples=16, max_new_tokens=256)
+wandb_callback = LLMSampleCB(trainer, eval_dataset, chunk_size = 2, num_samples=16, max_new_tokens=256)
 trainer.add_callback(wandb_callback)
 
 trainer.evaluate()
