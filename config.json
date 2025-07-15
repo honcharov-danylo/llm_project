@@ -1,10 +1,14 @@
 {
   "data_path": "/home/dhonchar/llm_project/clean_scripts/cleaned_data/",
   "load_cleaned": true,
+  "logic_data":  "/home/dhonchar/llm_project/logic_dataset/test_dataset.csv",
   "model_dir": "Qwen/Qwen2.5-3B-Instruct",
   "finetuned_path": "/home/dhonchar/llm_project/trained_models/1",
   "batch_size": 1,
+  "batch_size_eval": 16,
   "eval_length_prompt": 2048,
   "eval_length_response": 2048,
-  "eval_size": 256
+  "eval_size": 256,
+  "eval_size_logic": 1000,
+  "eval_depth_logic": 7
 }
