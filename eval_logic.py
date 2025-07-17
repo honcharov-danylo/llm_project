@@ -65,7 +65,7 @@ inputs['premises'] = inputs['premises'].apply(lambda x:ast.literal_eval(x))
 
 inputs = inputs.groupby('depth', group_keys=False).sample(config.get("eval_size_logic", 32), replace=False, random_state=0)
 
-inputs["formatted_input"] = inputs.apply(lambda x: test_prompt_style.format("\n".join(x["premises"]), x['question']), axis = 0)
+inputs["formatted_input"] = inputs.apply(lambda x: test_prompt_style.format("\n".join(x["premises"]), x['question']), axis = 1)
 inputs["formatted_output"] = inputs["formatted_input"] + inputs["label"].str.lower()
 
 inputs_in = inputs["formatted_input"].tolist()
