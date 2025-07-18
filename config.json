@@ -4,5 +4,6 @@
   "model_dir": "Qwen/Qwen2.5-3B-Instruct",
   "max_eval_tok": 4096,
   "env_path": "/home/dhonchar/llm_project/env",
-  "output_dir": "output_skip"
+  "output_dir": "output_skip",
+  "predict_sentences": 5
 }

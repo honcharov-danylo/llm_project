@@ -168,7 +168,7 @@ def _sample_generator(texts: List[str], start:int, step:int) -> Iterator[Dict[st
         for k in range(start, len(sents) + 1, step):
             yield {
                 "question": " ".join(sents[:k]),
-                "answer":   " ".join(sents[k:]),
+                "answer":   " ".join(sents[k:k + int(config["predict_sentences"])]),
             }
 
 def build_prefixqa_dataset(texts: List[str], start:int, step:int) -> datasets.IterableDataset:
@@ -411,8 +411,8 @@ trainer = SFTTrainer(
 logging.info("Starting training")
 
 
-wandb_callback = LLMSampleCB(trainer, eval_dataset, chunk_size = 2, num_samples=16, max_new_tokens=256)
-trainer.add_callback(wandb_callback)
+# wandb_callback = LLMSampleCB(trainer, eval_dataset, chunk_size = 2, num_samples=16, max_new_tokens=256)
+# trainer.add_callback(wandb_callback)
 
 trainer.evaluate()
 
