@@ -26,6 +26,10 @@ from transformers import GenerationConfig
 import json
 import gzip
 
+from dotenv import load_dotenv
+from b2_uploader import B2Uploader
+import time
+
 import gc, torch
 import os, tempfile, wandb, json
 
@@ -364,9 +368,11 @@ eval_dataset = eval_dataset_mapped.take(128)
 logging.info("Model loaded. Building training arguments.")
 eval_every = int(0.1 * steps)
 
+output_dir = config["output_dir"]
+
 # Training Arguments
 training_arguments = TrainingArguments(
-    output_dir="output_skip",
+    output_dir=output_dir,
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=1,
     gradient_accumulation_steps=2,
@@ -414,5 +420,14 @@ gc.collect()
 torch.cuda.empty_cache()
 model.config.use_cache = False
 trainer.train()
+
+final_model_path = "{}/final_model/".format(output_dir)
+trainer.save_model(final_model_path)
+
+output_dir_last = "{}/".format(output_dir)
+
+load_dotenv()
+uploader = B2Uploader()
+uploader.upload_file(final_model_path, "{}_{}".format(config["model_dir"], int(time.time())))
 
 wandb.finish()
