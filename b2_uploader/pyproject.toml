@@ -5,6 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "b2_uploader"
 version = "0.0.1"
+dependencies = [
+  "b2sdk"
+]
+
 
 description = "A small package used to syncronize files to backblaze bucket"
 readme = "README.md"
