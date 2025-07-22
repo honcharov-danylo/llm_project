@@ -1,0 +1,21 @@
+executable = /home/dhonchar/llm_project/finetuning_scripts/conda_wrapper_fine.sh
+
+arguments  = python /home/dhonchar/llm_project/finetuning_scripts/finetuning.py
+
+output     = logs_finetuning/ft.out
+error      = logs_finetuning/ft.err
+log        = logs_finetuning/ft.log
+getenv     = True
+
+
+Requirements = CUDADriverVersion >= 12.0
+
++request_gpus = 1
+#request_cpus   = 1
+#request_memory = 32 GB
+
+
+
+#queue 31
+#Requirements = TARGET.vm_name == "its-u20-nfs-20210413" && regexp("CRUSH", TARGET.name) 
+queue 
