@@ -1,6 +1,6 @@
-executable = /home/dhonchar/llm_project/eval_scripts/conda_wrapper_eval.sh
+executable = conda_wrapper_eval.sh
 
-arguments  = python /home/dhonchar/llm_project/eval_scripts/eval.py
+arguments  = python eval.py
 
 output     = logs_eval/ft_skip.out
 error      = logs_eval/ft_skip.err

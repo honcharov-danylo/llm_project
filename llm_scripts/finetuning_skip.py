@@ -29,6 +29,7 @@ import gzip
 from dotenv import load_dotenv
 from b2_uploader import B2Uploader
 import time
+from pathlib import Path
 
 import gc, torch
 import os, tempfile, wandb, json
@@ -43,6 +44,9 @@ import logging
 with open("config.json", 'r') as f:
     config = json.load(f)
 
+
+path_to_out = Path(config["output_dir"])
+path_to_out.mkdir(exist_ok=True)
 
 def run_lighteval(checkpoint_path, tasks):
     tracker = EvaluationTracker(output_dir="./le_results", save_details=False)

@@ -1,6 +1,6 @@
-executable = /home/dhonchar/llm_project/clean_scripts/conda_wrapper.sh
+executable = conda_wrapper.sh
 
-arguments  = python /home/dhonchar/llm_project/clean_scripts/clean.py $(Process) 32
+arguments  = python clean.py $(Process) 32
 
 output     = logs/clean_$(Process).out
 error      = logs/clean_$(Process).err
