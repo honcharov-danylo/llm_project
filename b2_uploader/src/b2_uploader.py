@@ -9,7 +9,7 @@ from b2sdk.v2 import (
 import time
 
 
-class UploaderBase:
+class SynchronizerBase:
     def __init__(self):
         pass
 
@@ -20,7 +20,7 @@ class UploaderBase:
         pass
 
 
-class B2Uploader(UploaderBase):
+class B2Synchronizer(SynchronizerBase):
     def __init__(self, b2_bucket_name=None):
         super().__init__()
         self.b2_bucket_name = b2_bucket_name
@@ -124,4 +124,3 @@ class B2Uploader(UploaderBase):
 
         except Exception as e:
             raise e
-        pass
