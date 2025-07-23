@@ -1,5 +1,6 @@
 #!/bin/bash
-eval "$(/home/$(whoami)/anaconda3/bin/conda shell.bash hook)" 
+cd "$(dirname "$0")"
+eval "$(/home/$(whoami)/anaconda3/bin/conda shell.bash hook)"
 
 source /home/dhonchar/.bashrc
 
