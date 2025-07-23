@@ -70,6 +70,7 @@ inputs["formatted_output"] = inputs["formatted_input"] + inputs["label"].str.low
 
 inputs_in = inputs["formatted_input"].tolist()
 inputs_out = inputs["label"].str.lower().tolist()
+inputs_depth = inputs["depth"].tolist()
 
 batch_size = config.get("batch_size_eval", 4)
 
@@ -123,6 +124,7 @@ nlp_input_out = [nlp(x) for x in inputs_out]
 
 results = dict()
 results["inputs"] = inputs_in
+results["inputs_depth"] = inputs_depth
 results["ground_truth"] = inputs_out
 results["responses_orig"] = responses_orig
 results["responses_ft"] = responses
