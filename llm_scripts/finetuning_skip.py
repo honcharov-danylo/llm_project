@@ -45,8 +45,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 from utils import Config
 
 config = Config("../configs/config_finetuning.json")
-os.environ["WANDB_PROJECT"] = config["llm-finetuning-skip-stylo"]   # must come before Trainer is built
-os.environ["WANDB_LOG_MODEL"] = config["checkpoint"]
+os.environ["WANDB_PROJECT"] = config["WANDB_PROJECT"]   # must come before Trainer is built
+os.environ["WANDB_LOG_MODEL"] = config["WANDB_LOG_MODEL"]
 
 
 path_to_out = Path(config["output_dir"])
