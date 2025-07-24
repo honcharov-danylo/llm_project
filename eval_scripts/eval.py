@@ -34,36 +34,11 @@ for i, llm_doc in enumerate(llm_corpus):
 # device = "cpu" # can be "cpu" or "cuda
 # inference on cuda takes too much memory
 
-with open("config.json", 'r') as f:
-    config = json.load(f)
+import argparse, pathlib, sys
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from utils import Config
 
-parser = argparse.ArgumentParser()
-
-for key, default_val in config.items():
-    if not key.isidentifier():
-        continue
-    if isinstance(default_val, bool):
-        parser.add_argument(
-            f"--{key}",
-            type=lambda s: str(s).lower() in {"1", "true", "yes"},
-            nargs="?",
-            const=True,
-            default=None,
-            help=f"(bool) default {default_val!r}",
-        )
-    else:
-        parser.add_argument(
-            f"--{key}",
-            type=type(default_val),
-            default=None,
-            help=f"default {default_val!r}",
-        )
-
-args = parser.parse_args()
-for k, v in vars(args).items():
-    if v is not None:
-        config[k] = v
-
+config = Config("../configs/config_finetuning.json")
 
 
 base = AutoModelForCausalLM.from_pretrained(config["model_dir"], device_map="auto")

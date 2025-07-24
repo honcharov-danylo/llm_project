@@ -42,7 +42,7 @@ import logging
 
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
-from ..utils import Config
+from utils import Config
 
 config = Config("../configs/config_finetuning.json")
 os.environ["WANDB_PROJECT"] = config["llm-finetuning-skip-stylo"]   # must come before Trainer is built
