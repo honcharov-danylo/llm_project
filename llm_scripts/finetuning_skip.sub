@@ -1,12 +1,14 @@
 executable = conda_wrapper_fine.sh
 
+LOGFILE = "finetuning"
+
 EXTRA_ARGS   =                                # blank on purpose
 arguments    = python finetuning_skip.py $(EXTRA_ARGS)
 # arguments  = python finetuning_skip.py
 
-output     = logs_finetuning/ft_skip.out
-error      = logs_finetuning/ft_skip.err
-log        = logs_finetuning/ft_skip.log
+output     = logs_finetuning/$(LOGFILE).out
+error      = logs_finetuning/$(LOGFILE).err
+log        = logs_finetuning/$(LOGFILE).log
 getenv     = True
 
 

@@ -5,5 +5,7 @@
   "max_eval_tok": 4096,
   "env_path": "/home/dhonchar/llm_project/env",
   "output_dir": "output_skip_5",
-  "predict_sentences": 5
+  "predict_sentences": 5,
+  "WANDB_PROJECT": "llm-finetuning-skip-stylo",
+  "WANDB_LOG_MODEL": "checkpoint"
 }
