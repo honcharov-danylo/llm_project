@@ -37,13 +37,14 @@ import os, tempfile, wandb, json
 from lighteval.logging.evaluation_tracker import EvaluationTracker
 from lighteval.pipeline import Pipeline, PipelineParameters, ParallelismManager
 from lighteval.models.transformers.transformers_model import TransformersModelConfig
-
+import argparse, pathlib, sys
 import logging
 
 
-with open("config.json", 'r') as f:
-    config = json.load(f)
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from ..utils import Config
 
+config = Config("../configs/config_finetuning.json")
 
 path_to_out = Path(config["output_dir"])
 path_to_out.mkdir(exist_ok=True)

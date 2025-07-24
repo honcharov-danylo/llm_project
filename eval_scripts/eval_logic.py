@@ -23,9 +23,16 @@ nltk.download("punkt")
 
 # device = "cpu" # can be "cpu" or "cuda
 # inference on cuda takes too much memory
+import argparse, pathlib, sys
+import logging
 
-with open("config.json", 'r') as f:
-    config = json.load(f)
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from ..utils import Config
+
+config = Config("../configs/config_finetuning.json")
+
+
 
 base = AutoModelForCausalLM.from_pretrained(config["model_dir"], device_map="auto")
 
