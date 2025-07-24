@@ -1,8 +1,8 @@
 executable = conda_wrapper_fine.sh
 
-LOGFILE = finetuning
+LOGFILE = $(LOGFILE:finetuning)
 
-EXTRA_ARGS   =                                # blank on purpose
+EXTRA_ARGS   = $(EXTRA_ARGS:)
 arguments    = python finetuning_skip.py $(EXTRA_ARGS)
 # arguments  = python finetuning_skip.py
 
