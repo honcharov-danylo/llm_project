@@ -9,6 +9,6 @@
   "eval_length_prompt": 2048,
   "eval_length_response": 2048,
   "eval_size": 256,
-  "eval_size_logic": 10000,
+  "eval_size_logic": 100,
   "eval_depth_logic": 7
 }
