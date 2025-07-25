@@ -1,0 +1,14 @@
+executable = conda_wrapper_eval.sh
+
+arguments  = python eval_params.py
+
+output     = logs_eval/ft_skip_params.out
+error      = logs_eval/ft_skip_params.err
+log        = logs_eval/ft_skip_params.log
+getenv     = True
+
+
+Requirements = CUDADriverVersion >= 12.0
+
++request_gpus = 1
+queue
