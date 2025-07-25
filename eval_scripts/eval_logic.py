@@ -98,7 +98,7 @@ with torch.no_grad():                          # no grads for inference
             return_tensors="pt",
             padding=True,
             truncation=True,
-            max_length=tokenizer.model_max_length
+            max_length=tokenizer.model_max_length, padding_side = 'left'
         ).to("cuda")
 
         outs_base = base.generate(
