@@ -38,7 +38,7 @@ import argparse, pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 from utils import Config
 
-config = Config("../configs/config_finetuning.json")
+config = Config("../configs/config_eval.json")
 
 
 base = AutoModelForCausalLM.from_pretrained(config["model_dir"], device_map="auto")
