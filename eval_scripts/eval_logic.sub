@@ -1,6 +1,6 @@
-executable = /home/dhonchar/llm_project/eval_scripts/conda_wrapper_eval.sh
+executable = conda_wrapper_eval.sh
 
-arguments  = python /home/dhonchar/llm_project/eval_scripts/eval_logic.py
+arguments  = python eval_logic.py
 
 output     = logs_eval/eval_logic.out
 error      = logs_eval/eval_logic.err
