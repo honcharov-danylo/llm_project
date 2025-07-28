@@ -98,8 +98,7 @@ def cut_length_response(x, config):
 inputs_in = [test_prompt_style.format(cut_length_in(x, config)) + tokenizer.eos_token for x in inputs]
 inputs_out = [cut_length_response(x, config) for x in inputs]
 
-test_corpus_orig = Corpus()
-test_corpus_finetuned = Corpus()
+
 
 batch_size = config.get("batch_size", 4)
 
@@ -114,6 +113,9 @@ for temperature_full in range(50, 100, 10):
 
     for repet_penalty_full in range(100, 200, 20):
         repet_penalty = repet_penalty_full / 100
+
+        test_corpus_orig = Corpus()
+        test_corpus_finetuned = Corpus()
 
         all_outputs_orig, all_outputs_ft = [], []
 
@@ -159,12 +161,14 @@ for temperature_full in range(50, 100, 10):
         #
         # responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
         for i, resp in enumerate(responses_orig):
-            test_corpus_orig.add_book("Test corpus", str(i), resp)
+            if len(resp)!=0:
+                test_corpus_orig.add_book("Test corpus", str(i), resp)
 
         test_corpus_orig.tokenise(tokenise_remove_pronouns_en)
 
         for i, resp in enumerate(responses):
-            test_corpus_finetuned.add_book("Test corpus, finetuned", str(i), resp)
+            if len(resp)!=0:
+                test_corpus_finetuned.add_book("Test corpus, finetuned", str(i), resp)
 
         test_corpus_finetuned.tokenise(tokenise_remove_pronouns_en)
 
