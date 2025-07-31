@@ -1,3 +1,5 @@
+# Eval_scripts
+
 Evaluation pipelines and parameter sweeps for comparing **base** vs **finetuned** models across similarity metrics and stylometry signals. Outputs are written to `out/` and `out_params/`.
 
 ---
