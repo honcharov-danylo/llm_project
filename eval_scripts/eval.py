@@ -217,5 +217,5 @@ results["finetuned"]["responses"] = responses
 
 results["finetuned"]["burrows"] = calculate_burrows_delta(corpus, test_corpus_finetuned, vocab_size = 100).to_dict()
 
-with open("out/out.json", "w") as f:
+with open(config["out_eval_file"], "w") as f:
     json.dump(results, f)

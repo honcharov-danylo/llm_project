@@ -10,5 +10,6 @@
   "eval_length_response": 2048,
   "eval_size": 256,
   "eval_size_logic": 1000,
-  "eval_depth_logic": 7
+  "eval_depth_logic": 7,
+  "out_eval_file": "out/out.json"
 }
