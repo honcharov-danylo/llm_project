@@ -1,10 +1,13 @@
 executable = conda_wrapper_eval.sh
 
-arguments  = python eval_params.py
+LOGFILE = $(LOGFILE:eval_logic)
+EXTRA_ARGS   = $(EXTRA_ARGS:)
 
-output     = logs_eval/ft_skip_params.out
-error      = logs_eval/ft_skip_params.err
-log        = logs_eval/ft_skip_params.log
+arguments  = python eval_params.py $(EXTRA_ARGS)
+
+output     = logs_eval/$(LOGFILE).out
+error      = logs_eval/$(LOGFILE).err
+log        = logs_eval/$(LOGFILE).log
 getenv     = True
 
 
