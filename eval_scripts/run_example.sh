@@ -1,0 +1,1 @@
+condor_submit eval.sub EXTRA_ARGS="--model_dir Qwen/Qwen3-4B --finetuned_path /home/dhonchar/llm_project/main_repo/llm_project/llm_scripts/qwen3_out/model-30000 --out-eval-file out/qwen3.json" LOGFILE="finetuning_qwen3"
