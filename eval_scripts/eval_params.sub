@@ -1,6 +1,6 @@
 executable = conda_wrapper_eval.sh
 
-LOGFILE = $(LOGFILE:eval_logic)
+LOGFILE = $(LOGFILE:eval_params)
 EXTRA_ARGS   = $(EXTRA_ARGS:)
 
 arguments  = python eval_params.py $(EXTRA_ARGS)
