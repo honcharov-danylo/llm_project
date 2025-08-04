@@ -10,7 +10,7 @@ error      = logs_eval/$(LOGFILE).err
 log        = logs_eval/$(LOGFILE).log
 getenv     = True
 
-Requirements = CUDADriverVersion >= 12.0
+Requirements = (CUDADriverVersion >= 12.0) && (GPUs >= 1)
 
 +request_gpus = 1
 queue
