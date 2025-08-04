@@ -136,18 +136,22 @@ for temperature_full in range(50, 100, 10):
                     **encoded,
                     max_new_tokens=1200,
                     eos_token_id=tokenizer.eos_token_id,
-                    use_cache=True
+                    use_cache=True,
+                    temperature=temperature,
+                    repetition_penalty = repet_penalty
                 )
                 all_outputs_orig.extend(
                     tokenizer.batch_decode(outs_base, skip_special_tokens=True)
                 )
 
-                # === finetuned (PEFT) model ===
+                # finetuned model
                 outs_ft = model.generate(
                     **encoded,
                     max_new_tokens=1200,
                     eos_token_id=tokenizer.eos_token_id,
-                    use_cache=True
+                    use_cache=True,
+                    temperature=temperature,
+                    repetition_penalty=repet_penalty
                 )
                 all_outputs_ft.extend(
                     tokenizer.batch_decode(outs_ft, skip_special_tokens=True)
