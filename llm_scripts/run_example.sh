@@ -1,1 +1,1 @@
-condor_submit finetuning_skip.sub EXTRA_ARGS="--model_dir Qwen/Qwen3-4B --output_dir qwen3_out" LOGFILE="finetuning_qwen3"
+condor_submit finetuning_skip.sub EXTRA_ARGS="--model_dir Qwen/Qwen3-4B --output_dir qwen3_out --WANDB_LOG_MODEL checkpoint_qwen3" LOGFILE="finetuning_qwen3"
