@@ -26,9 +26,9 @@ llm_corpus = llm_corpora.to_pandas()["text"].tolist()
 llm_titles = llm_corpora.to_pandas()["doc_id"].tolist()
 
 
-corpus = Corpus()
-for i, llm_doc in enumerate(llm_corpus):
-    corpus.add_book("LLM-corpus", llm_titles[i], llm_doc)
+# corpus = Corpus()
+# for i, llm_doc in enumerate(llm_corpus):
+#     corpus.add_book("LLM-corpus", llm_titles[i], llm_doc)
 
 
 # device = "cpu" # can be "cpu" or "cuda
@@ -78,10 +78,10 @@ else:
             inputs.append(f.read())
     del inputs[6326] # broken file
 
-for i, llm_doc in enumerate(inputs):
-    corpus.add_book("Our corpus", str(i), llm_doc)
-
-corpus.tokenise(tokenise_remove_pronouns_en)
+# for i, llm_doc in enumerate(inputs):
+#     corpus.add_book("Our corpus", str(i), llm_doc)
+#
+# corpus.tokenise(tokenise_remove_pronouns_en)
 
 inputs = inputs[:config.get("eval_size", 32)]
 
@@ -112,6 +112,16 @@ for temperature_full in range(50, 100, 10):
     temperature = temperature_full / 100
 
     for repet_penalty_full in range(100, 200, 20):
+
+        corpus = Corpus()
+        for i, llm_doc in enumerate(llm_corpus):
+            corpus.add_book("LLM-corpus", llm_titles[i], llm_doc)
+
+        for i, llm_doc in enumerate(inputs):
+            corpus.add_book("Our corpus", str(i), llm_doc)
+
+        corpus.tokenise(tokenise_remove_pronouns_en)
+
         repet_penalty = repet_penalty_full / 100
 
         test_corpus_orig = Corpus()
