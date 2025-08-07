@@ -17,7 +17,10 @@ import datasets
 from datasets import load_dataset
 import pandas as pd
 import argparse
-from faststylometry.en import tokenise_en, tokenise_remove_pronouns_en
+from faststylometry import tokenise_remove_pronouns_en
+
+def tokenise_en(text: str):
+    return re.findall(r"[A-Za-z']+", text.lower())
 
 def safe_tokenise(txt: str):
     toks = tokenise_remove_pronouns_en(txt)

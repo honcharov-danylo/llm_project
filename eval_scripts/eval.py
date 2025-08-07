@@ -19,7 +19,10 @@ import pandas as pd
 import argparse
 import gc
 
-from faststylometry.en import tokenise_en, tokenise_remove_pronouns_en
+from faststylometry import tokenise_remove_pronouns_en
+
+def tokenise_en(text: str):
+    return re.findall(r"[A-Za-z']+", text.lower())
 
 def safe_tokenise(txt: str):
     toks = tokenise_remove_pronouns_en(txt)
@@ -27,6 +30,7 @@ def safe_tokenise(txt: str):
     if not toks:
         toks = tokenise_en(txt)
     return toks
+
 
 nltk.download("punkt")
 
