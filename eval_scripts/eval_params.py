@@ -17,6 +17,14 @@ import datasets
 from datasets import load_dataset
 import pandas as pd
 import argparse
+from faststylometry import tokenise_en, tokenise_remove_pronouns_en
+
+def safe_tokenise(txt: str):
+    toks = tokenise_remove_pronouns_en(txt)
+    # If everything was stripped, fall back to plain tokenisation
+    if not toks:
+        toks = tokenise_en(txt)
+    return toks
 
 nltk.download("punkt")
 
@@ -120,12 +128,9 @@ for temperature_full in range(50, 100, 10):
         for i, llm_doc in enumerate(inputs):
             corpus.add_book("Our corpus", str(i), llm_doc)
 
-        corpus.tokenise(tokenise_remove_pronouns_en)
+        corpus.tokenise(safe_tokenise)
 
         repet_penalty = repet_penalty_full / 100
-
-        test_corpus_orig = Corpus()
-        test_corpus_finetuned = Corpus()
 
         all_outputs_orig, all_outputs_ft = [], []
 
@@ -174,17 +179,20 @@ for temperature_full in range(50, 100, 10):
         # responses_orig = tokenizer.batch_decode(outputs_orig, skip_special_tokens=True)
         #
         # responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        test_corpus_orig = Corpus()
+        test_corpus_finetuned = Corpus()
+
         for i, resp in enumerate(responses_orig):
             if len(resp)!=0:
                 test_corpus_orig.add_book("Test corpus", str(i), resp)
 
-        test_corpus_orig.tokenise(tokenise_remove_pronouns_en)
+        test_corpus_orig.tokenise(safe_tokenise)
 
         for i, resp in enumerate(responses):
             if len(resp)!=0:
                 test_corpus_finetuned.add_book("Test corpus, finetuned", str(i), resp)
 
-        test_corpus_finetuned.tokenise(tokenise_remove_pronouns_en)
+        test_corpus_finetuned.tokenise(safe_tokenise)
 
         nlp = spacy.load("en_core_web_md")
 
