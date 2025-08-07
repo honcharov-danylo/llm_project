@@ -17,6 +17,7 @@ import datasets
 from datasets import load_dataset
 import pandas as pd
 import argparse
+import gc
 
 nltk.download("punkt")
 
@@ -43,9 +44,7 @@ config = Config("../configs/config_eval.json")
 
 base = AutoModelForCausalLM.from_pretrained(config["model_dir"], device_map="auto")
 
-model = PeftModel.from_pretrained(base, config["finetuned_path"]).to("cuda")
 
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 tokenizer = AutoTokenizer.from_pretrained(config["finetuned_path"], use_fast=True)
 
@@ -132,7 +131,7 @@ inputs_out = [cut_length_response(x, config) for x in inputs]
 test_corpus_orig = Corpus()
 test_corpus_finetuned = Corpus()
 
-batch_size = config.get("batch_size", 4)       # try smaller if you OOM
+batch_size = config.get("batch_size", 1)       # try smaller if you OOM
 # ----------------------------------
 
 def batched(iterable, n):
@@ -142,10 +141,41 @@ def batched(iterable, n):
 
 all_outputs_orig, all_outputs_ft = [], []
 
-base.eval()
-model.eval()
+
+# with torch.no_grad():                          # no grads for inference
+#     for chunk in tqdm(batched(inputs_in, batch_size)):
+#         encoded = tokenizer(
+#             chunk,
+#             return_tensors="pt",
+#             padding=True,
+#             truncation=True,
+#             max_length=tokenizer.model_max_length, padding_side = 'left'
+#         ).to("cuda")
+#
+#         outs_base = base.generate(
+#             **encoded,
+#             max_new_tokens=1200,
+#             eos_token_id=tokenizer.eos_token_id,
+#             use_cache=True
+#         )
+#         all_outputs_orig.extend(
+#             tokenizer.batch_decode(outs_base, skip_special_tokens=True)
+#         )
+#
+#         # === finetuned (PEFT) model ===
+#         outs_ft = model.generate(
+#             **encoded,
+#             max_new_tokens=1200,
+#             eos_token_id=tokenizer.eos_token_id,
+#             use_cache=True
+#         )
+#         all_outputs_ft.extend(
+#             tokenizer.batch_decode(outs_ft, skip_special_tokens=True)
+#         )
 
 with torch.no_grad():                          # no grads for inference
+    base.eval()
+
     for chunk in tqdm(batched(inputs_in, batch_size)):
         encoded = tokenizer(
             chunk,
@@ -164,8 +194,23 @@ with torch.no_grad():                          # no grads for inference
         all_outputs_orig.extend(
             tokenizer.batch_decode(outs_base, skip_special_tokens=True)
         )
+    base.to("cpu");
+    del base;
+    gc.collect();
+    torch.cuda.empty_cache();
+    torch.cuda.ipc_collect()
 
-        # === finetuned (PEFT) model ===
+    model = PeftModel.from_pretrained(base, config["finetuned_path"]).to("cuda")
+    model.eval()
+    for chunk in tqdm(batched(inputs_in, batch_size)):
+        encoded = tokenizer(
+                chunk,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=tokenizer.model_max_length, padding_side='left'
+            ).to("cuda")
+        # finetuned (PEFT) model
         outs_ft = model.generate(
             **encoded,
             max_new_tokens=1200,
@@ -175,6 +220,7 @@ with torch.no_grad():                          # no grads for inference
         all_outputs_ft.extend(
             tokenizer.batch_decode(outs_ft, skip_special_tokens=True)
         )
+
 
 # replace the old variables so the rest of the script stays unchanged
 responses_orig = all_outputs_orig
