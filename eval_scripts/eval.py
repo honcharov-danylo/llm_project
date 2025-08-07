@@ -42,9 +42,11 @@ from utils import Config
 config = Config("../configs/config_eval.json")
 
 
-base = AutoModelForCausalLM.from_pretrained(config["model_dir"], device_map="auto")
+base = AutoModelForCausalLM.from_pretrained(config["model_dir"], device_map="auto").eval()
 
-
+model = PeftModel.from_pretrained(
+    base, config["finetuned_path"], device_map="auto"
+).eval()
 
 tokenizer = AutoTokenizer.from_pretrained(config["finetuned_path"], use_fast=True)
 
@@ -174,8 +176,6 @@ all_outputs_orig, all_outputs_ft = [], []
 #         )
 
 with torch.no_grad():                          # no grads for inference
-    base.eval()
-
     for chunk in tqdm(batched(inputs_in, batch_size)):
         encoded = tokenizer(
             chunk,
@@ -199,9 +199,6 @@ with torch.no_grad():                          # no grads for inference
     # gc.collect();
     # torch.cuda.empty_cache();
     # torch.cuda.ipc_collect()
-
-    model = PeftModel.from_pretrained(base, config["finetuned_path"]).to("cuda")
-    model.eval()
     for chunk in tqdm(batched(inputs_in, batch_size)):
         encoded = tokenizer(
                 chunk,
