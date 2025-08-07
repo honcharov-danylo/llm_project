@@ -12,7 +12,7 @@ log        = logs_eval/$(LOGFILE).log
 getenv     = True
 
 
-Requirements = (CUDAGlobalMemoryMb >= 22000)
+Requirements = (CUDAGlobalMemoryMb >= 22000) && (CUDADriverVersion >= 11.6)
 
 +request_gpus = 1
 queue
