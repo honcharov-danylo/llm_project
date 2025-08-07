@@ -194,11 +194,11 @@ with torch.no_grad():                          # no grads for inference
         all_outputs_orig.extend(
             tokenizer.batch_decode(outs_base, skip_special_tokens=True)
         )
-    base.to("cpu");
-    del base;
-    gc.collect();
-    torch.cuda.empty_cache();
-    torch.cuda.ipc_collect()
+    # base.to("cpu");
+    # del base;
+    # gc.collect();
+    # torch.cuda.empty_cache();
+    # torch.cuda.ipc_collect()
 
     model = PeftModel.from_pretrained(base, config["finetuned_path"]).to("cuda")
     model.eval()
