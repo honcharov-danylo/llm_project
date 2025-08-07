@@ -1,0 +1,18 @@
+executable = conda_wrapper_eval.sh
+
+
+LOGFILE = $(LOGFILE:eval)
+EXTRA_ARGS   = $(EXTRA_ARGS:)
+
+arguments  = python eval.py $(EXTRA_ARGS)
+
+output     = logs_eval/$(LOGFILE).out
+error      = logs_eval/$(LOGFILE).err
+log        = logs_eval/$(LOGFILE).log
+getenv     = True
+
+
+Requirements = (CUDADriverVersion >= 12.0) && (TotalSlotGPUs >= 1)
+
++request_gpus = 1
+queue
