@@ -19,6 +19,15 @@ import pandas as pd
 import argparse
 import gc
 
+from faststylometry import tokenise_en, tokenise_remove_pronouns_en
+
+def safe_tokenise(txt: str):
+    toks = tokenise_remove_pronouns_en(txt)
+    # If everything was stripped, fall back to plain tokenisation
+    if not toks:
+        toks = tokenise_en(txt)
+    return toks
+
 nltk.download("punkt")
 
 
@@ -82,7 +91,7 @@ else:
 for i, llm_doc in enumerate(inputs):
     corpus.add_book("Our corpus", str(i), llm_doc)
 
-corpus.tokenise(tokenise_remove_pronouns_en)
+corpus.tokenise(safe_tokenise)
 
 inputs = inputs[:config.get("eval_size", 32)]
 
@@ -229,12 +238,12 @@ responses       = all_outputs_ft
 for i, resp in enumerate(responses_orig):
     test_corpus_orig.add_book("Test corpus", str(i), resp)
 
-test_corpus_orig.tokenise(tokenise_remove_pronouns_en)
+test_corpus_orig.tokenise(safe_tokenise)
 
 for i, resp in enumerate(responses):
     test_corpus_finetuned.add_book("Test corpus, finetuned", str(i), resp)
 
-test_corpus_finetuned.tokenise(tokenise_remove_pronouns_en)
+test_corpus_finetuned.tokenise(safe_tokenise)
 
 nlp = spacy.load("en_core_web_md")
 
