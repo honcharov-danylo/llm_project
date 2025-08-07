@@ -53,6 +53,24 @@ path_to_out = Path(config["output_dir"])
 path_to_out.mkdir(exist_ok=True)
 
 def run_lighteval(checkpoint_path, tasks):
+    """
+    Run LightEval evaluation on a model checkpoint.
+    
+    Evaluates the model on specified tasks using the LightEval framework.
+    The evaluation is performed using CPU to avoid GPU memory conflicts.
+    
+    Args:
+        checkpoint_path (str): Path to the model checkpoint to evaluate
+        tasks (list): List of task specifications to evaluate on
+        
+    Returns:
+        dict: Nested dictionary containing evaluation results for all tasks
+        
+    Examples:
+        >>> tasks = ["leaderboard|gsm8k|0|true"]
+        >>> results = run_lighteval("./checkpoint", tasks)
+        >>> print(results["results"]["leaderboard"]["gsm8k"])
+    """
     tracker = EvaluationTracker(output_dir="./le_results", save_details=False)
 
     pipe_params = PipelineParameters(
@@ -80,11 +98,41 @@ def run_lighteval(checkpoint_path, tasks):
 
 
 class LightEvalCallback(TrainerCallback):
+    """
+    Custom callback for running LightEval evaluations during training.
+    
+    This callback periodically evaluates the model on specified tasks using
+    the LightEval framework and logs the results to Weights & Biases.
+    
+    Attributes:
+        tasks (list): List of task specifications for evaluation
+        freq (int): Frequency of evaluation (every N evaluations)
+        count (int): Counter for tracking evaluation calls
+    """
+    
     def __init__(self, tasks, freq=2):
+        """
+        Initialize the LightEval callback.
+        
+        Args:
+            tasks (list): List of task specifications for evaluation
+            freq (int, optional): Frequency of evaluation. Defaults to 2.
+        """
         self.tasks, self.freq = tasks, freq
         self.count = 0
 
     def on_evaluate(self, args, state, control, **kw):
+        """
+        Called after each evaluation step during training.
+        
+        Runs LightEval evaluation every N evaluations and logs results to W&B.
+        
+        Args:
+            args: Training arguments
+            state: Training state
+            control: Training control object
+            **kw: Additional keyword arguments including 'model' and 'tokenizer'
+        """
         self.count += 1
         if self.count % self.freq:
             return                      # only every Nth HF eval
@@ -171,6 +219,26 @@ else:
 logging.info("Data loaded.")
 
 def _sample_generator(texts: List[str], start:int, step:int) -> Iterator[Dict[str, str]]:
+    """
+    Generate training samples from a list of texts.
+    
+    Creates question-answer pairs by splitting texts into sentences and
+    using different portions as context and target.
+    
+    Args:
+        texts (List[str]): List of input texts
+        start (int): Starting index for sentence selection
+        step (int): Step size for sentence selection
+        
+    Yields:
+        Dict[str, str]: Dictionary with "question" and "answer" keys
+        
+    Examples:
+        >>> texts = ["This is sentence one. This is sentence two. This is sentence three."]
+        >>> for sample in _sample_generator(texts, 1, 2):
+        ...     print(sample)
+        {'question': 'This is sentence one.', 'answer': 'This is sentence two.'}
+    """
     for doc in texts:
         sents = sent_tokenize(doc)
         for k in range(start, len(sents) + 1, step):
@@ -180,6 +248,25 @@ def _sample_generator(texts: List[str], start:int, step:int) -> Iterator[Dict[st
             }
 
 def build_prefixqa_dataset(texts: List[str], start:int, step:int) -> datasets.IterableDataset:
+    """
+    Build a prefix-QA dataset from a list of texts.
+    
+    Creates an iterable dataset for training where the model learns to
+    predict the next sentence(s) given previous sentences as context.
+    
+    Args:
+        texts (List[str]): List of input texts
+        start (int): Starting index for sentence selection
+        step (int): Step size for sentence selection
+        
+    Returns:
+        datasets.IterableDataset: Dataset with question-answer pairs
+        
+    Examples:
+        >>> dataset = build_prefixqa_dataset(texts, 1, 10)
+        >>> for example in dataset:
+        ...     print(example)
+    """
     features = datasets.Features({
         "question": datasets.Value("string"),
         "answer":   datasets.Value("string"),
@@ -218,7 +305,32 @@ logging.info("Eval dataset is encoded.")
 
 
 class LLMSampleCB(WandbCallback):
+    """
+    Custom callback for logging sample predictions during training.
+    
+    This callback generates sample predictions during evaluation and logs
+    them to Weights & Biases along with style similarity metrics.
+    
+    Attributes:
+        sample_dataset: Dataset to sample from for generation
+        model: The language model
+        tokenizer: The tokenizer
+        chunk_size (int): Batch size for generation
+        gen_config: Generation configuration
+    """
+    
     def __init__(self, trainer, test_dataset, chunk_size=4,    num_samples = 32, max_new_tokens=256, log_model="checkpoint"):
+        """
+        Initialize the LLM sample callback.
+        
+        Args:
+            trainer: The trainer object
+            test_dataset: Dataset to sample from
+            chunk_size (int, optional): Batch size for generation. Defaults to 4.
+            num_samples (int, optional): Number of samples to generate. Defaults to 32.
+            max_new_tokens (int, optional): Maximum new tokens to generate. Defaults to 256.
+            log_model (str, optional): Model logging strategy. Defaults to "checkpoint".
+        """
         super().__init__()
         # self._log_model = log_model
         self.sample_dataset = test_dataset.take(num_samples)
@@ -228,6 +340,15 @@ class LLMSampleCB(WandbCallback):
                                                            max_new_tokens=max_new_tokens)
 
     def generate(self, prompt):
+        """
+        Generate text from a single prompt.
+        
+        Args:
+            prompt (str): Input prompt for generation
+            
+        Returns:
+            str: Generated text
+        """
         tokenized_prompt = self.tokenizer(prompt, return_tensors='pt')['input_ids'].cuda()
         with torch.inference_mode():
             output = self.model.generate(tokenized_prompt, generation_config=self.gen_config)
@@ -235,6 +356,15 @@ class LLMSampleCB(WandbCallback):
 
     @torch.inference_mode()
     def _generate_chunk(self, prompts):
+        """
+        Generate text for a batch of prompts.
+        
+        Args:
+            prompts (List[str]): List of input prompts
+            
+        Returns:
+            List[str]: List of generated texts
+        """
         tok = self.tokenizer(
             prompts,
             return_tensors="pt",
@@ -249,6 +379,15 @@ class LLMSampleCB(WandbCallback):
         )
 
     def samples_table(self):
+        """
+        Create a W&B table with sample predictions and style similarity metrics.
+        
+        Generates predictions for sample prompts, computes style similarity
+        against a style bank, and creates a table for logging.
+        
+        Returns:
+            wandb.Table: Table containing prompts, generations, and metrics
+        """
         prompts = [ex["text"] for ex in self.sample_dataset]
         gens = []  # will collect all generations
 
@@ -284,6 +423,15 @@ class LLMSampleCB(WandbCallback):
         return table
 
     def on_evaluate(self, args, state, control, **kwargs):
+        """
+        Called after each evaluation step to log sample predictions.
+        
+        Args:
+            args: Training arguments
+            state: Training state
+            control: Training control object
+            **kwargs: Additional keyword arguments
+        """
         super().on_evaluate(args, state, control, **kwargs)
         self._wandb.log(
             {"sample_predictions": self.samples_table()},
@@ -299,6 +447,23 @@ class LLMSampleCB(WandbCallback):
 
 
 def formatting_prompts_func(examples):
+    """
+    Format examples into training prompts.
+    
+    Converts question-answer pairs into formatted prompts using the
+    training prompt template and adds EOS tokens.
+    
+    Args:
+        examples (dict): Dictionary containing "question" and "answer" keys
+        
+    Returns:
+        dict: Dictionary with formatted "text" key
+        
+    Examples:
+        >>> examples = {"question": ["Hello"], "answer": ["World"]}
+        >>> result = formatting_prompts_func(examples)
+        >>> print(result["text"][0])
+    """
     inputs = examples["question"]
     outputs = examples["answer"]
     texts = []
@@ -314,6 +479,19 @@ logging.info("Formatting datasets:")
 
 
 def truncate_long_prompts(batch):
+    """
+    Truncate prompts that exceed the maximum token limit.
+    
+    Args:
+        batch (dict): Batch containing "text" key with prompts
+        
+    Returns:
+        dict: Batch with truncated prompts
+        
+    Examples:
+        >>> batch = {"text": ["very long prompt..."]}
+        >>> result = truncate_long_prompts(batch)
+    """
     trimmed = []
     for txt in batch["text"]:                 # txt is a string
         ids = tokenizer.encode(

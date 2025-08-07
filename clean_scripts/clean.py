@@ -51,6 +51,19 @@ IGNORE_RE = re.compile(rf"(?:[^\w\s{SENT_DELIM}]+|\d+)")   # for word_segmentati
 
 
 def _sentence_case(text: str) -> str:
+    """
+    Convert text to proper sentence case by capitalizing the first letter of each sentence.
+    
+    Args:
+        text (str): Input text that may have improper capitalization
+        
+    Returns:
+        str: Text with proper sentence case formatting
+        
+    Examples:
+        >>> _sentence_case("hello world. how are you?")
+        "Hello world. How are you?"
+    """
     text = re.sub(r"^\s*([a-z])", lambda m: m.group(1).upper(), text)
     def _repl(m):
         return m.group(1) + m.group(2).upper()
@@ -58,6 +71,24 @@ def _sentence_case(text: str) -> str:
     return text
 
 def _split_on_ner(text: str) -> List[Tuple[str, str]]:
+    """
+    Split text into parts based on named entity recognition (NER).
+    
+    Uses spaCy to identify named entities and splits the text into segments,
+    marking each segment as either "clean" (regular text) or "keep" (named entities).
+    
+    Args:
+        text (str): Input text to be processed
+        
+    Returns:
+        List[Tuple[str, str]]: List of tuples where each tuple contains:
+            - First element: "clean" or "keep" indicating the type of segment
+            - Second element: The actual text segment
+            
+    Examples:
+        >>> _split_on_ner("Apple Inc. is headquartered in Cupertino.")
+        [("clean", "Apple Inc. is headquartered in "), ("keep", "Cupertino"), ("clean", ".")]
+    """
     doc = NLP(text)
     parts = []
     last = 0
@@ -72,7 +103,22 @@ def _split_on_ner(text: str) -> List[Tuple[str, str]]:
 
 
 def _clean_piece(piece: str) -> str:
-    """Run the usual text-cleaning pipeline on *one* piece."""
+    """
+    Apply text cleaning pipeline to a single text piece.
+    
+    Performs spell checking and word segmentation on the input piece using SymSpell.
+    Handles compound word lookup and word segmentation with error handling.
+    
+    Args:
+        piece (str): Text piece to be cleaned
+        
+    Returns:
+        str: Cleaned text piece with corrected spelling and segmentation
+        
+    Examples:
+        >>> _clean_piece("helloworld")
+        "hello world"
+    """
     try:
         piece = SYM.lookup_compound(
             piece, max_edit_distance=1,
@@ -91,6 +137,22 @@ def _clean_piece(piece: str) -> str:
 
 
 def preclean(md: str) -> str:
+    """
+    Perform preliminary cleaning on markdown text.
+    
+    Removes hyphenation at line breaks and deletes unwanted control characters
+    while preserving tabs, newlines, and carriage returns.
+    
+    Args:
+        md (str): Raw markdown text to be pre-cleaned
+        
+    Returns:
+        str: Pre-cleaned markdown text with hyphenation removed and control chars cleaned
+        
+    Examples:
+        >>> preclean("hello-\nworld")
+        "helloworld"
+    """
     # de-hyphenate split words
     md = re.sub(r'(\w)-\n(\w)', r'\1\2', md)
 
@@ -115,12 +177,45 @@ SHORT_DUP_RE = re.compile(
 PUNCT_MODEL = PunctuationModel("oliverguhr/fullstop-punctuation-multilang-large")
 
 def restore_punct(text: str) -> str:
+    """
+    Restore punctuation to text using a multilingual punctuation model.
+    
+    Uses a pre-trained model to add appropriate punctuation marks to text
+    that may be missing punctuation.
+    
+    Args:
+        text (str): Text without or with incomplete punctuation
+        
+    Returns:
+        str: Text with restored punctuation
+        
+    Examples:
+        >>> restore_punct("hello world how are you")
+        "Hello world, how are you?"
+    """
     return PUNCT_MODEL.restore_punctuation(text)
 
 SKIP_TYPES = {"code_inline", "code_block", "fence"}  # never touch code
 
 
 def process_inline_block(inline):
+    """
+    Process an inline markdown block for text cleaning.
+    
+    Processes text nodes within an inline block, applying deduplication,
+    bracket preservation, NER-based cleaning, and punctuation restoration.
+    Modifies the inline block in-place.
+    
+    Args:
+        inline: Markdown inline block object to be processed
+        
+    Returns:
+        None: Modifies the inline block in-place
+        
+    Note:
+        This function preserves bracketed references and named entities while
+        cleaning the rest of the text content.
+    """
     txt_nodes = [t for t in inline.children if t.type == "text"]
     if not txt_nodes:
         return
@@ -155,6 +250,33 @@ def process_inline_block(inline):
 
 
 def clean_markdown(raw_md: str) -> str:
+    """
+    Clean and format markdown text using a comprehensive pipeline.
+    
+    Applies a series of cleaning operations to markdown text including:
+    - Preliminary cleaning (hyphenation removal, control char cleanup)
+    - Text deduplication
+    - Spell checking and word segmentation
+    - Named entity preservation
+    - Bracket reference preservation
+    - Punctuation restoration
+    - Sentence case formatting
+    - Final markdown formatting
+    
+    Args:
+        raw_md (str): Raw markdown text to be cleaned and formatted
+        
+    Returns:
+        str: Cleaned and properly formatted markdown text
+        
+    Examples:
+        >>> clean_markdown("# hello world\nThis is a test.")
+        "# Hello World\n\nThis is a test."
+        
+    Note:
+        This function preserves code blocks, inline code, and fence blocks
+        while cleaning all other text content.
+    """
     raw_md = preclean(raw_md)
     md = MarkdownIt()
     tokens = md.parse(raw_md)
