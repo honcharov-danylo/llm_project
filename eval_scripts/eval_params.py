@@ -179,6 +179,9 @@ for temperature_full in range(50, 100, 10):
         responses_orig = all_outputs_orig
         responses       = all_outputs_ft
 
+        print(len(responses_orig))
+        print(responses_orig[0])
+
         # responses_orig = tokenizer.batch_decode(outputs_orig, skip_special_tokens=True)
         #
         # responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
