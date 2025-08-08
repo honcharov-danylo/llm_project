@@ -210,11 +210,7 @@ for temperature_full in range(50, 100, 10):
 
         results["orig"]["responses"] = responses_orig
 
-        print("books in test_corpus_orig :", len(test_corpus_orig.books))
-        print("tokens in first book     :",
-              test_corpus_orig.books[0].tokens if test_corpus_orig.books else [])
-        print("difference_matrices size :", len(getattr(test_corpus_orig,
-                                                        "difference_matrices", [])))
+
 
         results["orig"]["burrows"] = calculate_burrows_delta(corpus, test_corpus_orig, vocab_size = 100).to_dict()
 
