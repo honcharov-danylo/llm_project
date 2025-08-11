@@ -237,8 +237,8 @@ with torch.no_grad():                          # no grads for inference
 responses_orig = all_outputs_orig
 responses       = all_outputs_ft
 
-print(len(responses_orig))
-print(responses_orig[0])
+# print(len(responses_orig))
+# print(responses_orig[0])
 
 
 # responses_orig = tokenizer.batch_decode(outputs_orig, skip_special_tokens=True)
@@ -268,10 +268,10 @@ results["orig"]["spacy_sim"] = [nlp(x).similarity(nlp_input_out[i]) for i,x in e
 results["orig"]["responses"] = responses_orig
 
 
-print("books in test_corpus_orig :", len(test_corpus_orig.books))
-print("tokens in first book     :",
-      test_corpus_orig.books[0].tokens if test_corpus_orig.books else [])
-print("difference_matrices size :", len(getattr(test_corpus_orig, "difference_matrices", [])))
+# print("books in test_corpus_orig :", len(test_corpus_orig.books))
+# print("tokens in first book     :",
+#       test_corpus_orig.books[0].tokens if test_corpus_orig.books else [])
+# print("difference_matrices size :", len(getattr(test_corpus_orig, "difference_matrices", [])))
 
 
 
