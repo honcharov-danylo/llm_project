@@ -246,15 +246,6 @@ Default paths for the outputs:
 - **Higher spaCy similarity**: Better semantic similarity
 - **Lower Burrows' Delta**: More similar writing style to reference corpus
 
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add comprehensive docstrings to new functions
-4. Test your changes thoroughly
-5. Submit a pull request
-
 ## Support
 
 For questions and support:
