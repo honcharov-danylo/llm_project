@@ -24,7 +24,7 @@ llm_project/
 └── requirements.txt       # Main project dependencies
 ```
 
-## 🛠️ Key Features
+## 🛠 Key Features
 
 - **Multi-stage Pipeline**: Clean → Fine-tune → Evaluate workflow
 - **Parameter-Efficient Training**: LoRA-based fine-tuning to reduce memory requirements
@@ -33,14 +33,14 @@ llm_project/
 - **Cloud Storage**: Automatic model upload to Backblaze B2
 - **Experiment Tracking**: Weights & Biases integration for training monitoring
 
-## 📋 Prerequisites
+##  Prerequisites
 
 - Python 3.10+
 - CUDA-compatible GPU (for training and inference)
 - HTCondor cluster access (optional, for distributed processing)
 - Backblaze B2 account (optional, for model storage)
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### 1. Environment Setup
 
