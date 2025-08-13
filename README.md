@@ -255,7 +255,7 @@ Default paths for the outputs:
 4. Test your changes thoroughly
 5. Submit a pull request
 
-## 📞 Support
+## Support
 
 For questions and support:
 - Open an issue on GitHub
