@@ -24,7 +24,7 @@ llm_project/
 └── requirements.txt       # Main project dependencies
 ```
 
-## 🛠 Key Features
+##  Key Features
 
 - **Multi-stage Pipeline**: Clean → Fine-tune → Evaluate workflow
 - **Parameter-Efficient Training**: LoRA-based fine-tuning to reduce memory requirements
