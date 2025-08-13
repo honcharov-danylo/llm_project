@@ -18,11 +18,38 @@ from datasets import load_dataset
 import pandas as pd
 import argparse
 from faststylometry import tokenise_remove_pronouns_en
+import re  # Added missing import for re.findall
 
 def tokenise_en(text: str):
+    """
+    Tokenize English text into words, converting to lowercase.
+    
+    Args:
+        text (str): Input text to tokenize
+        
+    Returns:
+        list: List of lowercase word tokens
+        
+    Examples:
+        >>> tokenise_en("Hello World!")
+        ['hello', 'world']
+    """
     return re.findall(r"[A-Za-z']+", text.lower())
 
 def safe_tokenise(txt: str):
+    """
+    Safely tokenize text with pronoun removal, falling back to basic tokenization if needed.
+    
+    Args:
+        txt (str): Input text to tokenize
+        
+    Returns:
+        list: List of tokenized words with pronouns removed, or basic tokens if stripping fails
+        
+    Examples:
+        >>> safe_tokenise("I am going to the store")
+        ['going', 'store']
+    """
     toks = tokenise_remove_pronouns_en(txt)
     # If everything was stripped, fall back to plain tokenisation
     if not toks:
@@ -97,10 +124,38 @@ else:
 inputs = inputs[:config.get("eval_size", 32)]
 
 def cut_length_in(x, config):
+    """
+    Cut input text to specified prompt length for evaluation.
+    
+    Args:
+        x (str): Input text to truncate
+        config (dict): Configuration dictionary containing 'eval_length_prompt'
+        
+    Returns:
+        str: Truncated text limited to 1/8 of original length or config limit
+        
+    Examples:
+        >>> cut_length_in("very long text...", {"eval_length_prompt": 2048})
+        "very long text..."[:min(len(text)//8, 2048)]
+    """
     ct_l = min(len(x)//8, config.get("eval_length_prompt", 2048))
     return x[:ct_l]
 
 def cut_length_response(x, config):
+    """
+    Cut response text to specified length for evaluation.
+    
+    Args:
+        x (str): Input text to extract response from
+        config (dict): Configuration dictionary containing length parameters
+        
+    Returns:
+        str: Response text extracted from middle portion of input, limited by config
+        
+    Examples:
+        >>> cut_length_response("prompt text response text", config)
+        "response text"  # extracted from middle portion
+    """
     ct_l = min(len(x)//8, config.get("eval_length_prompt", 2048))
     cl_2 = min(len(x)//8, config.get("eval_length_response", 2048))
     return x[ct_l:ct_l + cl_2]
@@ -114,16 +169,32 @@ inputs_out = [cut_length_response(x, config) for x in inputs]
 batch_size = config.get("batch_size", 4)
 
 def batched(iterable, n):
+    """
+    Split an iterable into batches of specified size.
+    
+    Args:
+        iterable: Any iterable object
+        n (int): Size of each batch
+        
+    Yields:
+        list: Batches of size n from the iterable
+        
+    Examples:
+        >>> list(batched([1, 2, 3, 4, 5], 2))
+        [[1, 2], [3, 4], [5]]
+    """
     it = iter(iterable)
     while (chunk := list(islice(it, n))):
         yield chunk
 
 
+# Main evaluation loop over temperature and repetition penalty parameters
 for temperature_full in range(50, 100, 10):
     temperature = temperature_full / 100
 
     for repet_penalty_full in range(100, 200, 20):
 
+        # Initialize corpus for stylometric analysis
         corpus = Corpus()
         for i, llm_doc in enumerate(llm_corpus):
             corpus.add_book("LLM-corpus", llm_titles[i], llm_doc)
@@ -140,6 +211,7 @@ for temperature_full in range(50, 100, 10):
         base.eval()
         model.eval()
 
+        # Generate responses from both base and finetuned models
         with torch.no_grad():                          # no grads for inference
             for chunk in tqdm(batched(inputs_in, batch_size)):
                 encoded = tokenizer(
@@ -150,6 +222,7 @@ for temperature_full in range(50, 100, 10):
                     max_length=tokenizer.model_max_length, padding_side = 'left'
                 ).to("cuda")
 
+                # Generate from base model
                 outs_base = base.generate(
                     **encoded,
                     max_new_tokens=1200,
@@ -162,7 +235,7 @@ for temperature_full in range(50, 100, 10):
                     tokenizer.batch_decode(outs_base, skip_special_tokens=True)
                 )
 
-                # finetuned model
+                # Generate from finetuned model
                 outs_ft = model.generate(
                     **encoded,
                     max_new_tokens=1200,
@@ -185,6 +258,8 @@ for temperature_full in range(50, 100, 10):
         # responses_orig = tokenizer.batch_decode(outputs_orig, skip_special_tokens=True)
         #
         # responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        
+        # Create corpora for stylometric analysis of generated responses
         test_corpus_orig = Corpus()
         test_corpus_finetuned = Corpus()
 
@@ -204,6 +279,7 @@ for temperature_full in range(50, 100, 10):
 
         nlp_input_out = [nlp(x) for x in inputs_out]
 
+        # Calculate various similarity metrics
         results = dict()
         results["inputs"] = inputs_in
         results["orig"] = dict()
@@ -226,5 +302,6 @@ for temperature_full in range(50, 100, 10):
 
         results["finetuned"]["burrows"] = calculate_burrows_delta(corpus, test_corpus_finetuned, vocab_size = 100).to_dict()
 
+        # Save results for current parameter combination
         with open("out_params/out_params_{}_{}.json".format(temperature, repet_penalty), "w") as f:
             json.dump(results, f)

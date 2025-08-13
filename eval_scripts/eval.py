@@ -23,9 +23,35 @@ import re
 from faststylometry import tokenise_remove_pronouns_en
 
 def tokenise_en(text: str):
+    """
+    Tokenize English text into words, converting to lowercase.
+    
+    Args:
+        text (str): Input text to tokenize
+        
+    Returns:
+        list: List of lowercase word tokens
+        
+    Examples:
+        >>> tokenise_en("Hello World!")
+        ['hello', 'world']
+    """
     return re.findall(r"[A-Za-z']+", text.lower())
 
 def safe_tokenise(txt: str):
+    """
+    Safely tokenize text with pronoun removal, falling back to basic tokenization if needed.
+    
+    Args:
+        txt (str): Input text to tokenize
+        
+    Returns:
+        list: List of tokenized words with pronouns removed, or basic tokens if stripping fails
+        
+    Examples:
+        >>> safe_tokenise("I am going to the store")
+        ['going', 'store']
+    """
     toks = tokenise_remove_pronouns_en(txt)
     # If everything was stripped, fall back to plain tokenisation
     if not toks:
@@ -46,9 +72,6 @@ for i, llm_doc in enumerate(llm_corpus):
     corpus.add_book("LLM-corpus", llm_titles[i], llm_doc)
 
 
-# device = "cpu" # can be "cpu" or "cuda
-# inference on cuda takes too much memory
-
 import argparse, pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 from utils import Config
@@ -57,7 +80,7 @@ config = Config("../configs/config_eval.json")
 
 
 base = AutoModelForCausalLM.from_pretrained(config["model_dir"], device_map="auto").eval()
-
+# important - use "device_map" = "auto - reduces memory footprint
 model = PeftModel.from_pretrained(
     base, config["finetuned_path"], device_map="auto"
 ).eval()
@@ -101,10 +124,38 @@ corpus.tokenise(safe_tokenise)
 inputs = inputs[:config.get("eval_size", 32)]
 
 def cut_length_in(x, config):
+    """
+    Cut input text to specified prompt length for evaluation.
+    
+    Args:
+        x (str): Input text to truncate
+        config (dict): Configuration dictionary containing 'eval_length_prompt'
+        
+    Returns:
+        str: Truncated text limited to 1/8 of original length or config limit
+        
+    Examples:
+        >>> cut_length_in("very long text...", {"eval_length_prompt": 2048})
+        "very long text..."[:min(len(text)//8, 2048)]
+    """
     ct_l = min(len(x)//8, config.get("eval_length_prompt", 2048))
     return x[:ct_l]
 
 def cut_length_response(x, config):
+    """
+    Cut response text to specified length for evaluation.
+    
+    Args:
+        x (str): Input text to extract response from
+        config (dict): Configuration dictionary containing length parameters
+        
+    Returns:
+        str: Response text extracted from middle portion of input, limited by config
+        
+    Examples:
+        >>> cut_length_response("prompt text response text", config)
+        "response text"  # extracted from middle portion
+    """
     ct_l = min(len(x)//8, config.get("eval_length_prompt", 2048))
     cl_2 = min(len(x)//8, config.get("eval_length_response", 2048))
     return x[ct_l:ct_l + cl_2]
@@ -151,6 +202,20 @@ batch_size = config.get("batch_size", 1)       # try smaller if you OOM
 # ----------------------------------
 
 def batched(iterable, n):
+    """
+    Split an iterable into batches of specified size.
+    
+    Args:
+        iterable: Any iterable object
+        n (int): Size of each batch
+        
+    Yields:
+        list: Batches of size n from the iterable
+        
+    Examples:
+        >>> list(batched([1, 2, 3, 4, 5], 2))
+        [[1, 2], [3, 4], [5]]
+    """
     it = iter(iterable)
     while (chunk := list(islice(it, n))):
         yield chunk
@@ -189,6 +254,7 @@ all_outputs_orig, all_outputs_ft = [], []
 #             tokenizer.batch_decode(outs_ft, skip_special_tokens=True)
 #         )
 
+# Generate responses from base model first
 with torch.no_grad():                          # no grads for inference
     for chunk in tqdm(batched(inputs_in, batch_size)):
         encoded = tokenizer(
@@ -213,6 +279,8 @@ with torch.no_grad():                          # no grads for inference
     # gc.collect();
     # torch.cuda.empty_cache();
     # torch.cuda.ipc_collect()
+    
+    # Generate responses from finetuned model
     for chunk in tqdm(batched(inputs_in, batch_size)):
         encoded = tokenizer(
                 chunk,
@@ -243,7 +311,9 @@ responses       = all_outputs_ft
 
 # responses_orig = tokenizer.batch_decode(outputs_orig, skip_special_tokens=True)
 #
-# responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+# responses = token_response
+
+# Create corpora for stylometric analysis of generated responses
 for i, resp in enumerate(responses_orig):
     test_corpus_orig.add_book("Test corpus", str(i), resp)
 
@@ -258,6 +328,7 @@ nlp = spacy.load("en_core_web_md")
 
 nlp_input_out = [nlp(x) for x in inputs_out]
 
+# Calculate various similarity metrics between generated responses and ground truth
 results = dict()
 results["inputs"] = inputs_in
 results["orig"] = dict()
@@ -286,5 +357,6 @@ results["finetuned"]["responses"] = responses
 
 results["finetuned"]["burrows"] = calculate_burrows_delta(corpus, test_corpus_finetuned, vocab_size = 100).to_dict()
 
+# Save evaluation results to output file
 with open(config["out_eval_file"], "w") as f:
     json.dump(results, f)
