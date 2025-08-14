@@ -61,6 +61,19 @@ pip install -r requirements.txt
 For the cluster applications anaconda must be installed in the home directory in the "anaconda3"
 folder (path should be ~/anaconda3).
 
+Each of the following directories - clean_scripts, llm_scripts, eval_scripts - contains a
+corresponding **.sub** file which can be submitted as HTCondor job. Each of them also contains
+name of the conda environment to be used.
+
+By default, conda environments are expected to be:
+
+| Cluster job    | Environment name |
+|:---------------|-----------------:|
+| clean_scripts/ |          llm_project |
+| eval_scripts/  |          eval_model |
+| llm_scripts/   |          llm_finetuning |
+
+
 
 ### 3. Data Preparation
 
