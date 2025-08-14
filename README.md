@@ -57,6 +57,11 @@ conda activate llm_project
 pip install -r requirements.txt
 ```
 
+### Anaconda Setup
+For the cluster applications anaconda must be installed in the home directory in the "anaconda3"
+folder (path should be ~/anaconda3).
+
+
 ### 2. Data Preparation
 
 ```bash
