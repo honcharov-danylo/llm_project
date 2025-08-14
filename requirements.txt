@@ -1,4 +1,60 @@
-peft==0.15.2
-transformers==4.52.3
-python-dotenv
-b2sdk
+# Core ML and Deep Learning
+torch>=2.0.0
+transformers>=4.52.0
+peft>=0.15.0
+trl>=0.19.0
+datasets>=3.6.0
+tokenizers>=0.21.0
+accelerate>=1.8.0
+bitsandbytes>=0.46.0
+safetensors>=0.5.0
+
+# Evaluation and Analysis
+lighteval>=0.10.0
+simphile>=1.0.0
+faststylometry>=1.0.0
+spacy>=3.8.0
+nltk>=3.9.0
+scikit-learn>=1.7.0
+scipy>=1.16.0
+numpy>=1.26.0
+pandas>=2.3.0
+
+# NLP and Text Processing
+sentence-transformers>=4.1.0
+sentencepiece>=0.2.0
+langdetect>=1.0.0
+symspellpy>=6.7.0
+deepmultilingualpunctuation>=1.0.0
+markdown-it-py>=3.0.0
+mdformat>=0.7.0
+
+# Utilities and Progress
+tqdm>=4.67.0
+python-dotenv>=1.1.0
+wandb>=0.20.0
+pathlib2>=2.3.0
+
+# Cloud Storage and File Handling
+b2sdk>=2.9.0
+fsspec>=2025.0.0
+smart-open>=7.1.0
+
+# Data Processing
+pyarrow>=20.0.0
+pyyaml>=6.0.0
+protobuf>=6.31.0
+
+# Development and Testing
+pytest>=7.0.0
+black>=23.0.0
+flake8>=6.0.0
+
+# Optional: CUDA-specific packages (uncomment if using CUDA)
+# nvidia-cuda-runtime-cu12>=12.6.0
+# nvidia-cudnn-cu12>=9.5.0
+
+# Note: Some packages require system-level dependencies:
+# - spacy models: python -m spacy download en_core_web_sm
+# - nltk data: python -c "import nltk; nltk.download('punkt')"
+# - CUDA toolkit for GPU acceleration
