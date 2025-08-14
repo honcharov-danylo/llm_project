@@ -69,9 +69,9 @@ By default, conda environments are expected to be:
 
 | Cluster job    | Environment name |
 |:---------------|-----------------:|
-| clean_scripts/ |          llm_project |
-| eval_scripts/  |          eval_model |
-| llm_scripts/   |          llm_finetuning |
+| ```clean_scripts/``` |          ```llm_project``` |
+| ```eval_scripts/```  |          ```eval_model``` |
+| ```llm_scripts/```   |          ```llm_finetuning``` |
 
 
 
