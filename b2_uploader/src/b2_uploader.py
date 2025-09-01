@@ -1,6 +1,5 @@
 import os
 import sys
-from dotenv import load_dotenv
 from b2sdk.v2 import (
     B2Api, InMemoryAccountInfo, AuthInfoCache, ScanPoliciesManager,
     parse_folder, Synchronizer, SyncReport, CompareVersionMode,
@@ -9,7 +8,7 @@ from b2sdk.v2 import (
 import time
 
 
-class SynchronizerBase:
+class UploaderBase:
     def __init__(self):
         pass
 
@@ -20,13 +19,10 @@ class SynchronizerBase:
         pass
 
 
-class B2Synchronizer(SynchronizerBase):
+class B2Uploader(UploaderBase):
     def __init__(self, b2_bucket_name=None):
         super().__init__()
         self.b2_bucket_name = b2_bucket_name
-        
-        # Load API Key and bucket name
-        load_dotenv()
         self.b2_api_key_id = os.getenv("B2_APPLICATION_KEY_ID")
         self.b2_api_key = os.getenv("B2_APPLICATION_KEY")
 
