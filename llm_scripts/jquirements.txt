@@ -1,0 +1,11 @@
+transformers
+datasets
+nltk
+tqdm
+peft
+trl
+sentence-transformers
+torch
+wandb
+lighteval
+python-dotenv
