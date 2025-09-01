@@ -53,8 +53,8 @@ class B2Uploader(UploaderBase):
 
     def upload_file(self, file_path, dest_directory):
         """
-        Upload a file to B2.
-        :param file_path: Path to the file to upload.
+        Upload a directory (but NOT file) to B2.
+        :param file_path: Path to the directory to upload.
         :param dest_directory: Destination directory in B2 bucket.
         """
         source_path = os.path.abspath(file_path)
@@ -74,7 +74,7 @@ class B2Uploader(UploaderBase):
 
     def download_file(self, bucket_path, dest_directory):
         """
-        Download a file or directory from B2.
+        Download a directory (but NOT file) from B2.
         :param bucket_path: Path in bucket to download.
         :param dest_directory: Destination directory local.
         """
