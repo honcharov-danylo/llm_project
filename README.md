@@ -274,3 +274,9 @@ For questions and support:
 ---
 
 **Note**: This project is designed for research purposes. Ensure you have appropriate licenses and permissions for any models or datasets you use.
+
+## Acknowledgements
+
+This project was supported as part of a grant (#G2023-20946) from the Alfred P. Sloan Foundation.
+
+Thanks to @honcharov-danylo who wrote the code and got the scripts to run on Syracuse University's OrangeGrud cluster during a 2025 summer project.
