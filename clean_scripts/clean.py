@@ -3,22 +3,19 @@ from tqdm import tqdm
 import json
 import gzip
 from langdetect import detect
-import spacy, re
+import spacy
+import re
+import sys
 from typing import List, Tuple
-# import pandas as pd
-
-from pathlib import Path
 from markdown_it import MarkdownIt                 # parses & re-renders Markdown :contentReference[oaicite:1]{index=1}
-from symspellpy import SymSpell, Verbosity         # spell/segment fixes     :contentReference[oaicite:2]{index=2}
+from symspellpy import SymSpell         # spell/segment fixes 
 from deepmultilingualpunctuation import PunctuationModel  # punctuation restore :contentReference[oaicite:3]{index=3}
-from mdformat.renderer import MDRenderer   # NEW ✔
+from mdformat.renderer import MDRenderer   
 import mdformat
-import string
-import pickle
+
 
 # load spaCy once
 NLP = spacy.load("en_core_web_sm")      # or your preferred model
-
 # NLP = spacy.load("en_core_web_trf")
 
 BRACKET_RE = re.compile(
@@ -290,11 +287,10 @@ def clean_markdown(raw_md: str) -> str:
     pretty = mdformat.text(MDRenderer().render(tokens, {}, env))
     return pretty
 
-import sys
-
 assert len(sys.argv)==3
 
-proc_num = int(sys.argv[1])
+# variables of current condor process and total processes, passed to script from shell
+proc_num = int(sys.argv[1])  
 total_proc = int(sys.argv[2])
 
 

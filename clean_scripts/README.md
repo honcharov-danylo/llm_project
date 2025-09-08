@@ -15,8 +15,8 @@ clean\_scripts/
 ├─ requirements.txt        # cleaning-specific deps
 └─ logs/                   # Condor stdout/err
 ````
+The cleaner expects raw Markdown/JSONL files to clean in `data/`. And then writes shards to:
 
-The cleaner writes shards to:
 ```
 clean\_scripts/cleaned\_data/data\_cleaned\_{PROC\_INDEX}.json.gz
 ```
