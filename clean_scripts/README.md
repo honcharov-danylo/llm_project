@@ -8,22 +8,20 @@ It normalizes Markdown, filters non-English, removes broken lines, optionally re
 ## Contents
 
 ````
-
 clean\_scripts/
 ├─ clean.py                 # main cleaning job (partitioned over processes)
 ├─ clean.sub               # HTCondor job file (launches many partitions)
 ├─ conda\_wrapper.sh        # Conda activation wrapper used by Condor
 ├─ requirements.txt        # cleaning-specific deps
 └─ logs/                   # Condor stdout/err
-
-```
+````
 
 The cleaner writes shards to:
 ```
 clean\_scripts/cleaned\_data/data\_cleaned\_{PROC\_INDEX}.json.gz
 ```
----
 
+---
 ## Dependencies
 
 ```bash
