@@ -152,13 +152,13 @@ class LightEvalCallback(TrainerCallback):
         }
         wandb.log(flat, step=state.global_step)
 
-
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_use_double_quant=False,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16,
-)
+# disable quantization for now
+# bnb_config = BitsAndBytesConfig(
+#     load_in_4bit=True,
+#     bnb_4bit_use_double_quant=False,
+#     bnb_4bit_quant_type="nf4",
+#     bnb_4bit_compute_dtype=torch.bfloat16,
+# )
 
 light_tasks = [
     "leaderboard|truthfulqa:mc|0|0",
@@ -174,7 +174,7 @@ model_dir = config["model_dir"]
 tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True, max_length = 50000)
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
-    quantization_config=bnb_config,
+    # quantization_config=bnb_config, disable quantization for now
     device_map="auto",
     torch_dtype=torch.bfloat16,
     trust_remote_code=True
