@@ -4,6 +4,6 @@ eval "$(/home/$(whoami)/anaconda3/bin/conda shell.bash hook)"
 
 source "/home/$(whoami)/.bashrc"
 
-conda activate llm_project
+conda activate data_cleaning
 
 $@ 

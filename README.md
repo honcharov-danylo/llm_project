@@ -50,8 +50,8 @@ git clone <repository-url>
 cd llm_project
 
 # Create and activate conda environment
-conda create -n llm_project python=3.10 -y
-conda activate llm_project
+conda create -n <environment name> python=3.10 -y
+conda activate <environment name>
 
 # Install dependencies
 pip install -r requirements.txt
@@ -69,7 +69,7 @@ By default, conda environments are expected to be:
 
 | Cluster job    | Environment name |
 |:---------------|-----------------:|
-| ```clean_scripts/``` |          ```llm_project``` |
+| ```clean_scripts/``` |          ```data_cleaning``` |
 | ```eval_scripts/```  |          ```eval_model``` |
 | ```llm_scripts/```   |          ```llm_finetuning``` |
 

@@ -20,17 +20,16 @@ clean\_scripts/
 
 The cleaner writes shards to:
 ```
-
 clean\_scripts/cleaned\_data/data\_cleaned\_{PROC\_INDEX}.json.gz
-
+```
 ---
 
 ## Dependencies
 
 ```bash
 # create or use an existing env; example:
-conda create -n llm_project python=3.10 -y
-conda activate llm_project
+conda create -n data_cleaning python=3.10 -y
+conda activate data_cleaning
 
 # install cleaning deps
 pip install -r clean_scripts/requirements.txt
