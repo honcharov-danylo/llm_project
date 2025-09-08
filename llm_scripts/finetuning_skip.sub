@@ -12,11 +12,12 @@ log        = logs_finetuning/$(LOGFILE).log
 getenv     = True
 
 
-Requirements = CUDADriverVersion >= 12.0
+#Requirements = CUDADriverVersion >= 12.0
+Requirements = CUDADriverVersion >= 12.0 && regexp("A100", TARGET.GPUs)
 
 +request_gpus = 1
 #request_cpus   = 1
-#request_memory = 32 GB
+request_memory = 64 GB
 
 
 

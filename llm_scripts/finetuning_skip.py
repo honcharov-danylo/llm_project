@@ -48,6 +48,11 @@ config = Config("../configs/config_finetuning.json")
 os.environ["WANDB_PROJECT"] = config["WANDB_PROJECT"]   # must come before Trainer is built
 os.environ["WANDB_LOG_MODEL"] = config["WANDB_LOG_MODEL"]
 
+# download punkt if we don't have it already (the sent_tokenize function requires it)
+try:
+    nltk.data.find('tokenizers/punkt_tab')
+except LookupError:
+    nltk.download('punkt_tab')
 
 path_to_out = Path(config["output_dir"])
 path_to_out.mkdir(exist_ok=True)

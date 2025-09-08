@@ -36,3 +36,5 @@ fi
 ## Todos conda environments
 * conda warpper use of `.bashrc` kosher?
 * point condawrappers to default miniforge folder instead of ~/anaconda3
+* finetuning_skip.py requires NLTK's Punkt model to be downloaded (can use shell command `python -c "import nltk; nltk.download('punkt_tab')"` and will save it to user folder). 
+    * note: i also added some code to download the model to the script
