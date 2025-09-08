@@ -27,7 +27,7 @@ import json
 import gzip
 
 from dotenv import load_dotenv
-from b2_uploader import B2Uploader
+# from b2_uploader import B2Uploader
 import time
 from pathlib import Path
 
@@ -612,8 +612,9 @@ trainer.save_model(final_model_path)
 
 output_dir_last = "{}/".format(output_dir)
 
-load_dotenv()
-uploader = B2Uploader()
-uploader.upload_file(final_model_path, "{}_{}".format(config["model_dir"], int(time.time())))
+# Disable B2 uploading for now
+# load_dotenv()
+# uploader = B2Uploader()
+# uploader.upload_file(final_model_path, "{}_{}".format(config["model_dir"], int(time.time())))
 
 wandb.finish()

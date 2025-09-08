@@ -20,16 +20,19 @@ fi
 ```
 
 ## Todos documentation
-* maybe use miniforge or mambaforge?
 * how to download/use other models from huggingface hub
+* seems like some parameters in config don't have a purpose. delete them?
+    * config_finetuning.json
+        * "env_path"
 
 ## Todos other
-* 
-
-## Todos conda environments
-* "llm_project" environment name is used only for clean scripts, maybe rename
-* conda warpper use of `.bashrc` kosher?
+* clean.py is pretty messy
+* use "clean_scripts/logs_cleaning/" or reate clean_scripts/log/ if it doesn't exist. Cleaning script condor job requires clean_scripts/log/ directory, fails otherwise. But .gitignore removes log/. 
 * make use of different models easier:
 	* parameterize? different configs?
 	* check example scripts don't use shell options that override the json config
 	* do the example scripts even need these shell arguments about the model dir?
+
+## Todos conda environments
+* conda warpper use of `.bashrc` kosher?
+* point condawrappers to default miniforge folder instead of ~/anaconda3
