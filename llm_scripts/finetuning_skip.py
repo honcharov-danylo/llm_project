@@ -608,7 +608,6 @@ trainer = SFTTrainer(
     data_collator=data_collator,
     callbacks = callbacks,
     eval_dataset = eval_dataset,
-    max_seq_length = config["max_eval_tok"], # check where else we truncate (searching for config string), seems like our truncation is redundant
     # compute_metrics=compute_metrics
 )
 logging.info("Starting training")
