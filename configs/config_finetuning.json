@@ -1,7 +1,8 @@
 {
-  "data_path": "/home/dhonchar/llm_project/clean_scripts/cleaned_data/",
+  "data_path": "/home/jrhimmel/workspace/llm_project/clean_scripts/cleaned_data/",
   "load_cleaned": true,
   "model_dir": "Qwen/Qwen2.5-3B-Instruct",
+  "max_sequence_length": 4096,
   "max_eval_tok": 4096,
   "output_dir": "output_skip_5",
   "predict_sentences": 5,

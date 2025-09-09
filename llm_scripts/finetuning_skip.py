@@ -176,7 +176,8 @@ callbacks = []
 
 model_dir = config["model_dir"]
 # model_dir = "Qwen/Qwen2.5-0.5B"
-tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True, max_length = 50000)
+tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True)
+tokenizer.model_max_length = config["max_sequence_length"]  # 4096 currently. Could try 2048 for safer memory usage, original was 50000; but problematic for memory usage
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     # quantization_config=bnb_config, disable quantization for now
@@ -477,6 +478,13 @@ def formatting_prompts_func(examples):
         if not response.endswith(tokenizer.eos_token):
             response += tokenizer.eos_token
         text = train_prompt_style.format(question, response)
+
+        # Truncate
+        tokens = tokenizer.encode(text, add_special_tokens=False)
+        if len(tokens) > config["max_eval_tok"]:
+            tokens = tokens[:config["max_eval_tok"]]
+            text = tokenizer.decode(tokens, skip_special_tokens=True)
+
         texts.append(text)
     return {"text": texts}
 
@@ -497,16 +505,13 @@ def truncate_long_prompts(batch):
         >>> batch = {"text": ["very long prompt..."]}
         >>> result = truncate_long_prompts(batch)
     """
+    
     trimmed = []
     for txt in batch["text"]:                 # txt is a string
-        ids = tokenizer.encode(
-            txt,
-            add_special_tokens=False,
-            truncation=False,
-        )
-        if len(ids) > config["max_eval_tok"]:
-            ids = ids[:config["max_eval_tok"]]
-            txt = tokenizer.decode(ids, skip_special_tokens=True)
+        tokens = tokenizer.encode(txt, add_special_tokens=False)
+        if len(tokens) > config["max_eval_tok"]:
+            tokens = tokens[:config["max_eval_tok"]]
+            txt = tokenizer.decode(tokens, skip_special_tokens=True)
         trimmed.append(txt)
     return {"text": trimmed}
 
@@ -550,6 +555,12 @@ peft_config = LoraConfig(
 )
 
 model = get_peft_model(model, peft_config)
+
+# for debug "UserWarning: Already found a `peft_config` attribute in the model."
+print("Model config keys:", model.config.__dict__.keys())
+print("Has peft_config?", hasattr(model, 'peft_config'))
+if hasattr(model, 'peft_config'):
+    print("Existing peft_config:", model.peft_config)
 
 batch_size = 4
 steps = int(500000/batch_size)
@@ -597,6 +608,7 @@ trainer = SFTTrainer(
     data_collator=data_collator,
     callbacks = callbacks,
     eval_dataset = eval_dataset,
+    max_seq_length = config["max_eval_tok"], # check where else we truncate (searching for config string), seems like our truncation is redundant
     # compute_metrics=compute_metrics
 )
 logging.info("Starting training")
