@@ -480,7 +480,7 @@ def formatting_prompts_func(examples):
         text = train_prompt_style.format(question, response)
 
         # Truncate
-        tokens = tokenizer.encode(text, add_special_tokens=False)
+        tokens = tokenizer.encode(text, add_special_tokens=True) # adding special tokens to make sure we calculate total tokens in sequence right
         if len(tokens) > config["max_eval_tok"]:
             tokens = tokens[:config["max_eval_tok"]]
             text = tokenizer.decode(tokens, skip_special_tokens=True)
@@ -554,13 +554,19 @@ peft_config = LoraConfig(
     ],  # Target modules for LoRA
 )
 
-model = get_peft_model(model, peft_config)
-
 # for debug "UserWarning: Already found a `peft_config` attribute in the model."
-print("Model config keys:", model.config.__dict__.keys())
+# Check BEFORE applying PEFT
+print("BEFORE get_peft_model: \n")
 print("Has peft_config?", hasattr(model, 'peft_config'))
 if hasattr(model, 'peft_config'):
     print("Existing peft_config:", model.peft_config)
+model = get_peft_model(model, peft_config)
+
+# for debug "UserWarning: Already found a `peft_config` attribute in the model."
+# Check AFTER applying PEFT  
+print("AFTER get_peft_model: \n")
+print("Has peft_config?", hasattr(model, 'peft_config'))
+
 
 batch_size = 4
 steps = int(500000/batch_size)

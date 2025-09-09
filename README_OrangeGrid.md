@@ -26,6 +26,9 @@ fi
         * "env_path"
 
 ## Todos other
+* finetuning_skip.py
+    * check truncation in formatting_prompts_func(). Added special tokens to check limit of max_sequence length. "Token indices sequence length is longer than the specified maximum sequence length for this model"
+    * logging doesn't seem to work. Don't see anything at stdout at any rate. Maybe no logger set up? 
 * clean.py is pretty messy
 * use "clean_scripts/logs_cleaning/" or reate clean_scripts/log/ if it doesn't exist. Cleaning script condor job requires clean_scripts/log/ directory, fails otherwise. But .gitignore removes log/. 
 * make use of different models easier:
