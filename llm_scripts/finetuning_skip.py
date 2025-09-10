@@ -26,23 +26,29 @@ from transformers import GenerationConfig
 import json
 import gzip
 
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 # from b2_uploader import B2Uploader
 import time
 from pathlib import Path
 
 import gc, torch
 import os, tempfile, wandb, json
+from utils import Config
 
 from lighteval.logging.evaluation_tracker import EvaluationTracker
 from lighteval.pipeline import Pipeline, PipelineParameters, ParallelismManager
 from lighteval.models.transformers.transformers_model import TransformersModelConfig
 import argparse, pathlib, sys
+
 import logging
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
-from utils import Config
+
 
 config = Config("../configs/config_finetuning.json")
 os.environ["WANDB_PROJECT"] = config["WANDB_PROJECT"]   # must come before Trainer is built
@@ -175,7 +181,7 @@ callbacks = []
 
 
 model_dir = config["model_dir"]
-# model_dir = "Qwen/Qwen2.5-0.5B"
+
 tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True)
 tokenizer.model_max_length = config["max_sequence_length"]  # 4096 currently. Could try 2048 for safer memory usage, original was 50000; but problematic for memory usage
 model = AutoModelForCausalLM.from_pretrained(
@@ -480,7 +486,7 @@ def formatting_prompts_func(examples):
         text = train_prompt_style.format(question, response)
 
         # Truncate
-        tokens = tokenizer.encode(text, add_special_tokens=True) # adding special tokens to make sure we calculate total tokens in sequence right
+        tokens = tokenizer.encode(text, add_special_tokens=False) 
         if len(tokens) > config["max_eval_tok"]:
             tokens = tokens[:config["max_eval_tok"]]
             text = tokenizer.decode(tokens, skip_special_tokens=True)
@@ -555,15 +561,14 @@ peft_config = LoraConfig(
 )
 
 # for debug "UserWarning: Already found a `peft_config` attribute in the model."
-# Check BEFORE applying PEFT
+# Check BEFORE applying PEFT -- returns FALSE
 print("BEFORE get_peft_model: \n")
 print("Has peft_config?", hasattr(model, 'peft_config'))
-if hasattr(model, 'peft_config'):
-    print("Existing peft_config:", model.peft_config)
+
 model = get_peft_model(model, peft_config)
 
 # for debug "UserWarning: Already found a `peft_config` attribute in the model."
-# Check AFTER applying PEFT  
+# Check AFTER applying PEFT --- returns TRUE
 print("AFTER get_peft_model: \n")
 print("Has peft_config?", hasattr(model, 'peft_config'))
 
