@@ -1,0 +1,8 @@
+# gpu-interactive.sub
+executable             = /bin/bash
+arguments              = -l    # login shell
+getenv                 = true
+Requirements = CUDADriverVersion >= 12.0 && regexp("A100", TARGET.CUDADeviceName) 
++request_gpus = 1
++InteractiveJob        = true
+queue
